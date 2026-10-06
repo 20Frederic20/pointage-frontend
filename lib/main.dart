@@ -13,13 +13,18 @@ class PointageApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final employeeNumber = ref.watch(sessionProvider);
+    final session = ref.watch(sessionProvider);
     return MaterialApp(
       title: 'Pointage',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      home: employeeNumber == null ? const LoginScreen() : const PunchScreen(),
+      home: switch (session) {
+        AsyncData(value: null) => const LoginScreen(),
+        AsyncData() => const PunchScreen(),
+        // build() ne lève jamais : seul le chargement initial arrive ici.
+        _ => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      },
     );
   }
 }

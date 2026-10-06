@@ -46,7 +46,7 @@ class PunchScreen extends ConsumerWidget {
             child: Row(children: [
               const Icon(Icons.badge_outlined, size: 20),
               const SizedBox(width: 8),
-              Expanded(child: Text(ref.watch(sessionProvider) ?? '', style: text.titleMedium)),
+              Expanded(child: Text(ref.watch(sessionProvider).value?.employeeNumber ?? '', style: text.titleMedium)),
               IconButton(
                 tooltip: 'Se déconnecter',
                 icon: const Icon(Icons.logout),

@@ -17,16 +17,21 @@ class PunchState {
 class PunchController extends Notifier<PunchState> {
   @override
   PunchState build() {
-    ref.watch(sessionProvider); // repart à zéro quand l'utilisateur change
+    ref.watch(sessionProvider.select((s) => s.value?.employeeNumber)); // repart à zéro quand l'utilisateur change
     return const PunchState();
   }
 
   Future<void> punch() async {
-    final employeeNumber = ref.read(sessionProvider);
-    if (state.loading || employeeNumber == null) return;
+    final session = ref.read(sessionProvider).value;
+    if (state.loading || session == null) return;
     state = PunchState(last: state.last, loading: true);
     try {
-      final entry = await ref.read(punchRepositoryProvider).punch(employeeNumber);
+      final token = await ref.read(sessionProvider.notifier).accessToken();
+      if (token == null) { // session expirée : main.dart renvoie vers la connexion
+        state = PunchState(last: state.last);
+        return;
+      }
+      final entry = await ref.read(punchRepositoryProvider).punch(session.employeeNumber, accessToken: token);
       state = PunchState(last: entry);
     } catch (e) {
       state = PunchState(last: state.last, error: e is ApiException ? e.message : 'Pointage impossible, vérifiez la connexion.');

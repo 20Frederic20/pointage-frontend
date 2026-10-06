@@ -24,7 +24,7 @@ class PunchRepository {
   PunchRepository(this._api);
   final ApiClient _api;
 
-  Future<TimeEntry> punch(String employeeNumber) async {
+  Future<TimeEntry> punch(String employeeNumber, {String? accessToken}) async {
     final pos = await _currentPosition();
     final json = await _api.post('/time-entries', {
       'employee_number': employeeNumber,
@@ -32,7 +32,7 @@ class PunchRepository {
       'longitude': pos.longitude,
       'source': 'MOBILE',
       'idempotency_key': _randomKey(),
-    });
+    }, accessToken: accessToken);
     return TimeEntry.fromJson(json);
   }
 
