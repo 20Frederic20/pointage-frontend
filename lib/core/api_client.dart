@@ -1,15 +1,13 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
-/// URL du backend : `flutter run --dart-define=API_URL=http://192.168.1.10:8000`.
-/// Par défaut : localhost sur le web, 10.0.2.2 (= le PC hôte) depuis l'émulateur Android.
-const _apiUrlOverride = String.fromEnvironment('API_URL');
-final apiUrl = _apiUrlOverride.isNotEmpty
-    ? _apiUrlOverride
-    : (kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000');
+/// URL du backend. Par défaut `localhost:8000`, valable partout :
+/// - web : le navigateur tourne sur le PC ;
+/// - téléphone USB ou émulateur : `adb reverse tcp:8000 tcp:8000` relie le port du téléphone au PC.
+/// Sans câble (Wi-Fi) : `flutter run --dart-define=API_URL=http://<ip-du-pc>:8000`.
+const apiUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8000');
 
 class ApiException implements Exception {
   ApiException(this.message, {this.status, this.code});
@@ -23,10 +21,12 @@ class ApiException implements Exception {
 /// Codes d'erreur du backend (`DomainErrorSchema.code`) traduits pour l'utilisateur.
 const _messages = {
   'INVALID_LOGIN_CODE': 'Code incorrect ou expiré.',
-  'INVALID_CREDENTIALS': 'Email ou mot de passe incorrect.',
+  'INVALID_CREDENTIALS': 'Identifiant ou mot de passe incorrect.',
   'INVALID_REFRESH_TOKEN': 'Session expirée, reconnectez-vous.',
   'INVALID_ACCESS_TOKEN': 'Session expirée, reconnectez-vous.',
   'ACCESS_DENIED': "Vous n'avez pas accès à cette action.",
+  'TOO_FAR_FROM_WORKPLACE': 'Vous êtes trop loin de votre lieu de travail pour pointer (100 m maximum).',
+  'EMPLOYEE_NOT_ASSIGNED': "Vous n'avez pas d'affectation active aujourd'hui. Contactez votre responsable.",
 };
 
 class ApiClient {

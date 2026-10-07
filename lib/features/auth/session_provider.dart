@@ -11,36 +11,35 @@ class Session {
     required this.accessToken,
     required this.refreshToken,
     required this.accessExpiresAt,
-    required this.employeeNumber,
+    required this.identifier,
   });
 
   final String accessToken;
   final String refreshToken;
   final DateTime accessExpiresAt;
 
-  // ponytail: le pointage attend encore le matricule ; à retirer quand le backend
-  // le déduira du jeton (GET /employees/me ou POST /time-entries authentifié).
-  final String employeeNumber;
+  /// Matricule ou email saisi à la connexion, affiché en haut de l'écran.
+  final String identifier;
 
-  factory Session.from(TokenPair t, String employeeNumber) => Session(
+  factory Session.from(TokenPair t, String identifier) => Session(
         accessToken: t.accessToken,
         refreshToken: t.refreshToken,
         accessExpiresAt: DateTime.now().add(Duration(seconds: t.expiresIn)),
-        employeeNumber: employeeNumber,
+        identifier: identifier,
       );
 
   Map<String, dynamic> toJson() => {
         'accessToken': accessToken,
         'refreshToken': refreshToken,
         'accessExpiresAt': accessExpiresAt.toIso8601String(),
-        'employeeNumber': employeeNumber,
+        'identifier': identifier,
       };
 
   factory Session.fromJson(Map<String, dynamic> j) => Session(
         accessToken: j['accessToken'] as String,
         refreshToken: j['refreshToken'] as String,
         accessExpiresAt: DateTime.parse(j['accessExpiresAt'] as String),
-        employeeNumber: j['employeeNumber'] as String,
+        identifier: j['identifier'] as String,
       );
 }
 
@@ -63,8 +62,8 @@ class SessionNotifier extends AsyncNotifier<Session?> {
     return _refresh(Session.fromJson(jsonDecode(raw) as Map<String, dynamic>));
   }
 
-  Future<void> signIn(TokenPair tokens, String employeeNumber) async {
-    final session = Session.from(tokens, employeeNumber);
+  Future<void> signIn(TokenPair tokens, String identifier) async {
+    final session = Session.from(tokens, identifier);
     await _save(session);
     state = AsyncData(session);
   }
@@ -97,7 +96,7 @@ class SessionNotifier extends AsyncNotifier<Session?> {
   Future<Session?> _refresh(Session session) async {
     try {
       final tokens = await ref.read(authRepositoryProvider).refresh(session.refreshToken);
-      final next = Session.from(tokens, session.employeeNumber);
+      final next = Session.from(tokens, session.identifier);
       await _save(next);
       return next;
     } on ApiException catch (e) {

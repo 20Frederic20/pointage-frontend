@@ -17,19 +17,20 @@ class TokenPair {
       );
 }
 
-/// Routes `/auth/*` du backend.
+/// Routes `/auth/*` du backend. `identifier` = matricule ou email : le backend
+/// retrouve le compte et envoie toujours le code à l'email du compte.
 class AuthRepository {
   AuthRepository(this._api);
   final ApiClient _api;
 
   /// Toujours 202, que le compte existe ou non (le backend ne le révèle pas).
-  Future<void> requestCode(String email) => _api.post('/auth/otp/request', {'email': email});
+  Future<void> requestCode(String identifier) => _api.post('/auth/otp/request', {'identifier': identifier});
 
-  Future<TokenPair> verifyCode(String email, String code) async =>
-      TokenPair.fromJson(await _api.post('/auth/otp/verify', {'email': email, 'code': code}));
+  Future<TokenPair> verifyCode(String identifier, String code) async =>
+      TokenPair.fromJson(await _api.post('/auth/otp/verify', {'identifier': identifier, 'code': code}));
 
-  Future<TokenPair> loginWithPassword(String email, String password) async =>
-      TokenPair.fromJson(await _api.post('/auth/login', {'email': email, 'password': password}));
+  Future<TokenPair> loginWithPassword(String identifier, String password) async =>
+      TokenPair.fromJson(await _api.post('/auth/login', {'identifier': identifier, 'password': password}));
 
   /// Rotation : l'ancien jeton est révoqué, la session gagne 36 h.
   Future<TokenPair> refresh(String refreshToken) async =>

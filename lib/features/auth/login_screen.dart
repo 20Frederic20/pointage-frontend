@@ -7,7 +7,7 @@ import '../../core/theme.dart';
 import 'auth_repository.dart';
 import 'session_provider.dart';
 
-/// Connexion : matricule + email, puis code reçu par email (6 chiffres).
+/// Connexion : matricule OU email, puis code reçu par email (6 chiffres).
 /// Les comptes qui ont un mot de passe passent par « Se connecter avec un mot de passe ».
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -18,8 +18,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _employeeNumber = TextEditingController();
-  final _email = TextEditingController();
+  final _identifier = TextEditingController(); // matricule ou email
   final _secret = TextEditingController(); // code ou mot de passe
 
   bool _usePassword = false;
@@ -28,13 +27,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
-    _employeeNumber.dispose();
-    _email.dispose();
+    _identifier.dispose();
     _secret.dispose();
     super.dispose();
   }
 
-  String get _emailValue => _email.text.trim();
+  String get _identifierValue => _identifier.text.trim();
 
   Future<void> _run(Future<void> Function() action) async {
     if (_busy || !_formKey.currentState!.validate()) return;
@@ -52,23 +50,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _sendCode() => _run(() async {
-        await ref.read(authRepositoryProvider).requestCode(_emailValue);
+        await ref.read(authRepositoryProvider).requestCode(_identifierValue);
         if (!mounted) return;
         setState(() {
           _codeSent = true;
           _secret.clear();
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Si un compte existe pour $_emailValue, un code vient d\'y être envoyé.')),
+          const SnackBar(content: Text("Si ce compte existe, un code vient d'être envoyé à son adresse email.")),
         );
       });
 
   Future<void> _signIn() => _run(() async {
         final repo = ref.read(authRepositoryProvider);
         final tokens = _usePassword
-            ? await repo.loginWithPassword(_emailValue, _secret.text)
-            : await repo.verifyCode(_emailValue, _secret.text.trim());
-        await ref.read(sessionProvider.notifier).signIn(tokens, _employeeNumber.text.trim());
+            ? await repo.loginWithPassword(_identifierValue, _secret.text)
+            : await repo.verifyCode(_identifierValue, _secret.text.trim());
+        await ref.read(sessionProvider.notifier).signIn(tokens, _identifierValue);
       });
 
   void _toggleMode() => setState(() {
@@ -106,22 +104,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             style: text.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 32),
                         TextFormField(
-                          controller: _employeeNumber,
+                          controller: _identifier,
                           enabled: !_codeSent,
                           validator: _required,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(labelText: 'Matricule', prefixIcon: Icon(Icons.badge_outlined)),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _email,
-                          enabled: !_codeSent,
-                          validator: (v) => (v == null || !v.contains('@')) ? 'Email invalide' : null,
-                          keyboardType: TextInputType.emailAddress,
-                          autofillHints: const [AutofillHints.email],
+                          autocorrect: false,
+                          keyboardType: TextInputType.emailAddress, // garde chiffres, lettres et @ à portée
+                          autofillHints: const [AutofillHints.username, AutofillHints.email],
                           textInputAction: showSecret ? TextInputAction.next : TextInputAction.done,
                           onFieldSubmitted: (_) => showSecret ? null : _sendCode(),
-                          decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.mail_outline)),
+                          decoration: const InputDecoration(
+                            labelText: 'Matricule ou email',
+                            prefixIcon: Icon(Icons.badge_outlined),
+                          ),
                         ),
                         if (showSecret) ...[
                           const SizedBox(height: 16),
@@ -165,7 +159,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                             TextButton(
                               onPressed: _busy ? null : () => setState(() => _codeSent = false),
-                              child: const Text("Changer d'email"),
+                              child: const Text("Changer d'identifiant"),
                             ),
                             TextButton(onPressed: _busy ? null : _sendCode, child: const Text('Renvoyer le code')),
                           ]),

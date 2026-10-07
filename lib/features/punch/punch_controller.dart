@@ -17,13 +17,12 @@ class PunchState {
 class PunchController extends Notifier<PunchState> {
   @override
   PunchState build() {
-    ref.watch(sessionProvider.select((s) => s.value?.employeeNumber)); // repart à zéro quand l'utilisateur change
+    ref.watch(sessionProvider.select((s) => s.value?.identifier)); // repart à zéro quand l'utilisateur change
     return const PunchState();
   }
 
   Future<void> punch() async {
-    final session = ref.read(sessionProvider).value;
-    if (state.loading || session == null) return;
+    if (state.loading || ref.read(sessionProvider).value == null) return;
     state = PunchState(last: state.last, loading: true);
     try {
       final token = await ref.read(sessionProvider.notifier).accessToken();
@@ -31,13 +30,19 @@ class PunchController extends Notifier<PunchState> {
         state = PunchState(last: state.last);
         return;
       }
-      final entry = await ref.read(punchRepositoryProvider).punch(session.employeeNumber, accessToken: token);
+      final entry = await ref.read(punchRepositoryProvider).punch(token);
       state = PunchState(last: entry);
     } catch (e) {
-      state = PunchState(last: state.last, error: e is ApiException ? e.message : 'Pointage impossible, vérifiez la connexion.');
+      state = PunchState(last: state.last, error: _message(e));
     }
   }
 }
+
+String _message(Object e) => switch (e) {
+      ApiException(code: 'NOT_FOUND') => "Aucune fiche employé n'est liée à ce compte.",
+      ApiException(:final message) => message,
+      _ => 'Pointage impossible, vérifiez la connexion.',
+    };
 
 final punchControllerProvider = NotifierProvider<PunchController, PunchState>(PunchController.new);
 

@@ -24,10 +24,10 @@ class PunchRepository {
   PunchRepository(this._api);
   final ApiClient _api;
 
-  Future<TimeEntry> punch(String employeeNumber, {String? accessToken}) async {
+  /// L'employé est lu dans le jeton ; arrivée ou départ est décidé par le serveur.
+  Future<TimeEntry> punch(String accessToken) async {
     final pos = await _currentPosition();
     final json = await _api.post('/time-entries', {
-      'employee_number': employeeNumber,
       'latitude': pos.latitude,
       'longitude': pos.longitude,
       'source': 'MOBILE',
