@@ -53,12 +53,14 @@ class EmployeeController extends Notifier<EmployeeState> {
         return;
       }
 
-      final list = await ref.read(employeeRepositoryProvider).get(token);
+      final rawList = await ref.read(employeeRepositoryProvider).list(token);
+
+      final employees = rawList.map((json) => Employee.fromJson(json)).toList();
 
       state = state.copyWith(
         loading: false,
-        employees: list,
-        last: list.isNotEmpty ? list.last : null,
+        employees: employees,
+        last: employees.isNotEmpty ? employees.last : null,
       );
     } catch (e) {
       state = state.copyWith(

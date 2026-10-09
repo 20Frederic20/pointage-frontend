@@ -24,13 +24,15 @@ class EmployeeRepository {
   EmployeeRepository(this._api);
   final ApiClient _api;
 
-  Future<List<Employee>> get(String accessToken) async {
-    final data = await _api.get("/employees", accessToken: accessToken);
+  Future<List<Map<String, dynamic>>> list(String accessToken) async {
+    final data = await _api.get('/employees', accessToken: accessToken);
 
-    // Map the JSON list to a List<Employee>
-    return (data as List)
-        .map((json) => Employee.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return (data as List).map((e) => e as Map<String, dynamic>).toList();
+  }
+
+  Future<Employee> getbyId(String accessToken, String id) async {
+    final data = await _api.get("/employees/$id", accessToken: accessToken);
+    return Employee.fromJson(data);
   }
 
   Future<Employee> post(String accessToken, ) async {
