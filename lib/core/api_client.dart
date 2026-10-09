@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 /// - web : le navigateur tourne sur le PC ;
 /// - téléphone USB ou émulateur : `adb reverse tcp:8000 tcp:8000` relie le port du téléphone au PC.
 /// Sans câble (Wi-Fi) : `flutter run --dart-define=API_URL=http://<ip-du-pc>:8000`.
-const apiUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:8000');
+const apiUrl = String.fromEnvironment('API_URL', defaultValue: 'http://10.1.6.185:8000');
 
 class ApiException implements Exception {
   ApiException(this.message, {this.status, this.code});
@@ -51,6 +51,24 @@ class ApiClient {
           (res.statusCode == 422
               ? 'Vérifiez les informations saisies.'
               : (data is Map ? data['message'] as String? : null) ?? 'Erreur serveur (${res.statusCode})');
+      throw ApiException(message, status: res.statusCode, code: code);
+    }
+    return data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> get(String path, {String? accessToken}) async {
+    final res = await _http.get(
+        Uri.parse('$apiUrl$path'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+        },
+    ).timeout(const Duration(seconds: 15));
+
+    final data = res.bodyBytes.isEmpty ? <String, dynamic>{} : jsonDecode(utf8.decode(res.bodyBytes));
+    if (res.statusCode >= 400) {
+      final code = data is Map ? data['code'] as String? : null;
+      final message = _messages[code] ?? (data is Map ? data['message'] as String? : null) ?? 'Erreur serveur (${res.statusCode})';
       throw ApiException(message, status: res.statusCode, code: code);
     }
     return data as Map<String, dynamic>;
