@@ -1,24 +1,9 @@
 import 'package:pointage/core/api_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pointage/features/employee/employee_model.dart';
 
 
-class Employee {
-  Employee({required this.userId, required this.directoryId, required this.employeeNumber, this.role, this.phone });
 
-  final String userId;
-  final String directoryId;
-  final String? role;
-  final String employeeNumber;
-  final String? phone;
-
-  factory Employee.fromJson(Map<String, dynamic> j) => Employee(
-    userId: j["userId"] as String,
-    directoryId: j["directoryId"] as String,
-    role: j["role"] as String,
-    employeeNumber: j["employeeNumber"] as String,
-    phone: j["phone"] as String,
-  );
-}
 
 class EmployeeRepository {
   EmployeeRepository(this._api);

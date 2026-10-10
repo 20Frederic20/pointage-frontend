@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pointage/core/api_client.dart';
 import 'package:pointage/features/auth/session_provider.dart';
+import 'package:pointage/features/employee/employee_model.dart';
 import 'package:pointage/features/employee/employee_repository.dart';
 
 

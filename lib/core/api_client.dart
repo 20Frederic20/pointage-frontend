@@ -56,7 +56,7 @@ class ApiClient {
     return data as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> get(String path, {String? accessToken}) async {
+  Future<dynamic> get(String path, {String? accessToken}) async {
     final res = await _http.get(
         Uri.parse('$apiUrl$path'),
         headers: {
@@ -71,7 +71,7 @@ class ApiClient {
       final message = _messages[code] ?? (data is Map ? data['message'] as String? : null) ?? 'Erreur serveur (${res.statusCode})';
       throw ApiException(message, status: res.statusCode, code: code);
     }
-    return data as Map<String, dynamic>;
+    return data;
   }
 }
 
