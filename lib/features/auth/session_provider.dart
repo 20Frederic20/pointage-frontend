@@ -114,3 +114,11 @@ class SessionNotifier extends AsyncNotifier<Session?> {
 }
 
 final sessionProvider = AsyncNotifierProvider<SessionNotifier, Session?>(SessionNotifier.new);
+
+/// Jeton valide pour un appel API ; lève une [ApiException] 401 quand la session est terminée
+/// (main.dart renvoie alors vers la connexion).
+Future<String> requireAccessToken(Ref ref) async {
+  final token = await ref.read(sessionProvider.notifier).accessToken();
+  if (token == null) throw ApiException('Session expirée, reconnectez-vous.', status: 401);
+  return token;
+}

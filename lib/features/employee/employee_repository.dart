@@ -1,29 +1,35 @@
-import 'package:pointage/core/api_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pointage/features/employee/employee_model.dart';
 
+import '../../core/api_client.dart';
+import '../../core/paged.dart';
+import 'employee_model.dart';
 
-
-
+/// Routes `/employees` du backend.
 class EmployeeRepository {
   EmployeeRepository(this._api);
   final ApiClient _api;
 
-  Future<List<Map<String, dynamic>>> list(String accessToken) async {
-    final data = await _api.get('/employees', accessToken: accessToken);
-
-    return (data as List).map((e) => e as Map<String, dynamic>).toList();
+  Future<Paged<Employee>> list(
+    String accessToken, {
+    EmployeeFilters filters = const EmployeeFilters(),
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final data = await _api.get('/employees', accessToken: accessToken, query: {
+      if (filters.search.isNotEmpty) 'employee_number': filters.search,
+      if (filters.role != null) 'role': filters.role!.wire,
+      if (filters.isActive != null) 'is_active': '${filters.isActive}',
+      'limit': '$limit',
+      'offset': '$offset',
+    });
+    return Paged.fromJson(data as Map<String, dynamic>, Employee.fromJson);
   }
 
-  Future<Employee> getbyId(String accessToken, String id) async {
-    final data = await _api.get("/employees/$id", accessToken: accessToken);
-    return Employee.fromJson(data);
-  }
+  Future<Employee> getById(String accessToken, String id) async =>
+      Employee.fromJson(await _api.get('/employees/$id', accessToken: accessToken) as Map<String, dynamic>);
 
-  Future<Employee> post(String accessToken, ) async {
-    final data = await _api.post("/employees", {}, accessToken: accessToken);
-    return Employee.fromJson(data);
-  }
+  Future<Employee> create(String accessToken, EmployeeDraft draft) async =>
+      Employee.fromJson(await _api.post('/employees', draft.toJson(), accessToken: accessToken));
 }
 
 final employeeRepositoryProvider = Provider((ref) => EmployeeRepository(ref.watch(apiClientProvider)));
