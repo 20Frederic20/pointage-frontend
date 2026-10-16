@@ -5,7 +5,11 @@ import 'package:pointage/core/paged.dart';
 import 'package:pointage/core/role.dart';
 import 'package:pointage/features/auth/session_provider.dart';
 import 'package:pointage/features/employee/employee_model.dart';
+import 'package:pointage/features/directory/directory_model.dart';
+import 'package:pointage/features/directory/directory_repository.dart';
 import 'package:pointage/features/employee/employee_repository.dart';
+import 'package:pointage/features/user/user_model.dart';
+import 'package:pointage/features/user/user_repository.dart';
 
 /// Session ouverte sans stockage sécurisé ni réseau.
 class FakeSession extends SessionNotifier {
@@ -89,4 +93,37 @@ class FakeEmployeeRepository implements EmployeeRepository {
     all.add(created);
     return created;
   }
+}
+
+const ana = AppUser(
+    id: 'usr1', email: 'ana@pointage.bj', role: Role.employee, isActive: true, firstName: 'Ana', lastName: 'Dossou');
+const direction = Directory(id: 'dir1', name: 'Direction générale', code: 'DG');
+const siege = Site(id: 'sit1', name: 'Siège Cotonou');
+
+class FakeUserRepository implements UserRepository {
+  FakeUserRepository({this.users = const [ana], this.error});
+  final List<AppUser> users;
+  Object? error;
+
+  @override
+  Future<Paged<AppUser>> list(String accessToken, {int limit = 100, int offset = 0}) async {
+    if (error case final e?) throw e;
+    return Paged(items: users, total: users.length);
+  }
+}
+
+class FakeDirectoryRepository implements DirectoryRepository {
+  FakeDirectoryRepository({this.directories = const [direction], this.sitesByDirectory = const {'dir1': [siege]}, this.error});
+  final List<Directory> directories;
+  final Map<String, List<Site>> sitesByDirectory;
+  Object? error;
+
+  @override
+  Future<Paged<Directory>> list(String accessToken, {int limit = 100, int offset = 0}) async {
+    if (error case final e?) throw e;
+    return Paged(items: directories, total: directories.length);
+  }
+
+  @override
+  Future<List<Site>> sites(String accessToken, String directoryId) async => sitesByDirectory[directoryId] ?? const [];
 }

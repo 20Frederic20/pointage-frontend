@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
@@ -126,3 +128,44 @@ class EmployeeController extends Notifier<EmployeeState> {
 }
 
 final employeeControllerProvider = NotifierProvider<EmployeeController, EmployeeState>(EmployeeController.new);
+
+/// Fiche d'un employé (`GET /employees/{id}`). Pas de nouvel essai automatique :
+/// un 404 doit s'afficher tout de suite.
+final employeeDetailProvider = FutureProvider.autoDispose.family<Employee, String>(
+  (ref, id) async => ref.read(employeeRepositoryProvider).getById(await requireAccessToken(ref), id),
+  retry: (_, _) => null,
+);
+
+class EmployeeFormState {
+  const EmployeeFormState({this.submitting = false, this.error});
+  final bool submitting;
+  final String? error;
+}
+
+/// Création d'un employé ; rafraîchit la liste après succès.
+class EmployeeFormController extends Notifier<EmployeeFormState> {
+  @override
+  EmployeeFormState build() => const EmployeeFormState();
+
+  /// L'employé créé, ou null en cas d'échec (le message est dans l'état).
+  Future<Employee?> submit(EmployeeDraft draft) async {
+    if (state.submitting) return null;
+    state = const EmployeeFormState(submitting: true);
+    try {
+      final created = await ref.read(employeeRepositoryProvider).create(await requireAccessToken(ref), draft);
+      if (ref.mounted) state = const EmployeeFormState();
+      unawaited(ref.read(employeeControllerProvider.notifier).refresh());
+      return created;
+    } catch (e) {
+      if (ref.mounted) {
+        state = EmployeeFormState(
+          error: e is ApiException ? e.message : 'Création impossible, vérifiez la connexion.',
+        );
+      }
+      return null;
+    }
+  }
+}
+
+final employeeFormControllerProvider =
+    NotifierProvider.autoDispose<EmployeeFormController, EmployeeFormState>(EmployeeFormController.new);
