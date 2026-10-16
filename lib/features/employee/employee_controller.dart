@@ -68,6 +68,7 @@ class EmployeeController extends Notifier<EmployeeState> {
   @override
   EmployeeState build() {
     ref.watch(sessionProvider.select((s) => s.value?.identifier)); // repart à zéro quand l'utilisateur change
+    _generation++; // écarte toute requête encore en vol
     return const EmployeeState();
   }
 

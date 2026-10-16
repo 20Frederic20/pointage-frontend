@@ -119,6 +119,20 @@ void main() {
     expect(state().error, 'Session expirée, reconnectez-vous.');
   });
 
+  test('a response pending when the controller rebuilds is discarded', () async {
+    setUpWith();
+    final gate = Completer<void>();
+    repo.beforeReturn = (_) => gate.future;
+    final pending = controller().refresh();
+    await Future<void>.delayed(Duration.zero);
+    container.invalidate(employeeControllerProvider);
+    expect(state().items, isEmpty);
+    gate.complete();
+    await pending;
+    expect(state().items, isEmpty);
+    expect((state().total, state().loading), (0, false));
+  });
+
   test('employeeErrorMessage', () {
     expect(employeeErrorMessage(ApiException('x', status: 404)), 'Employé introuvable.');
     expect(employeeErrorMessage(ApiException('Ce matricule est déjà utilisé.', status: 409)), 'Ce matricule est déjà utilisé.');
