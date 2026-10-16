@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pointage/core/api_client.dart';
@@ -12,6 +14,7 @@ const draft = EmployeeDraft(userId: 'usr1', directoryId: 'dir1', employeeNumber:
 void main() {
   late FakeEmployeeRepository repo;
   late ProviderContainer container;
+  late ProviderSubscription<EmployeeFormState> formSub;
 
   setUp(() {
     repo = FakeEmployeeRepository();
@@ -19,7 +22,8 @@ void main() {
       overrides: [fakeSession(), employeeRepositoryProvider.overrideWithValue(repo)],
       retry: (_, _) => null,
     );
-    container.listen(employeeFormControllerProvider, (_, _) {}); // garde le provider autoDispose en vie
+    formSub = container.listen(employeeFormControllerProvider, (_, _) {}); // garde le provider autoDispose en vie
+    container.listen(employeeControllerProvider, (_, _) {});
   });
 
   test('a successful submit returns the employee and refreshes the list', () async {
@@ -30,6 +34,22 @@ void main() {
     expect(container.read(employeeFormControllerProvider).error, isNull);
     await pumpEventQueue();
     expect(repo.calls, isNotEmpty);
+    expect(container.read(employeeControllerProvider).total, 46);
+  });
+
+  test('a created employee is still returned when the form is disposed mid-request', () async {
+    final gate = Completer<void>();
+    repo.createGate = gate.future;
+    final notifier = container.read(employeeFormControllerProvider.notifier);
+    final pending = notifier.submit(draft);
+    await pumpEventQueue();
+    formSub.close(); // plus aucun écouteur : le provider autoDispose est détruit
+    await pumpEventQueue();
+    gate.complete();
+    final created = await pending;
+    expect(created?.employeeNumber, 'EMP0000099');
+    await pumpEventQueue();
+    expect(container.read(employeeControllerProvider).total, 46);
   });
 
   test('a rejected submit returns null and keeps the backend message', () async {

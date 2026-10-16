@@ -151,10 +151,12 @@ class EmployeeFormController extends Notifier<EmployeeFormState> {
   Future<Employee?> submit(EmployeeDraft draft) async {
     if (state.submitting) return null;
     state = const EmployeeFormState(submitting: true);
+    // Lu avant tout await : le formulaire (autoDispose) peut être fermé pendant la requête.
+    final list = ref.read(employeeControllerProvider.notifier);
     try {
       final created = await ref.read(employeeRepositoryProvider).create(await requireAccessToken(ref), draft);
       if (ref.mounted) state = const EmployeeFormState();
-      unawaited(ref.read(employeeControllerProvider.notifier).refresh());
+      unawaited(list.refresh());
       return created;
     } catch (e) {
       if (ref.mounted) {

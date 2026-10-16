@@ -55,6 +55,9 @@ class FakeEmployeeRepository implements EmployeeRepository {
   Object? createError;
   EmployeeDraft? lastDraft;
 
+  /// Si défini, [create] attend ce futur avant de répondre (simule une requête en cours).
+  Future<void>? createGate;
+
   /// Appelée avant chaque réponse de [list] avec le numéro de l'appel : permet de retenir une réponse.
   Future<void> Function(int call)? beforeReturn;
 
@@ -81,6 +84,7 @@ class FakeEmployeeRepository implements EmployeeRepository {
   @override
   Future<Employee> create(String accessToken, EmployeeDraft draft) async {
     lastDraft = draft;
+    await createGate;
     if (createError case final error?) throw error;
     final created = Employee(
       id: 'emp${all.length + 1}',
