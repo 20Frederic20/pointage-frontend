@@ -22,9 +22,9 @@ void main() {
         directoryRepositoryProvider.overrideWithValue(FakeDirectoryRepository()),
       ];
 
-  Future<void> pumpForm(WidgetTester tester, {FakeUserRepository? users}) => pumpAtWidth(
+  Future<void> pumpForm(WidgetTester tester, {FakeUserRepository? users, double width = 800}) => pumpAtWidth(
         tester,
-        800,
+        width,
         Scaffold(body: EmployeeForm(onCreated: (e) => created = e)),
         height: 1400,
         overrides: overrides(users: users),
@@ -102,5 +102,25 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(repo.lastDraft, isNull);
     expect(find.text('Choisissez un utilisateur.'), findsOneWidget);
+  });
+
+  testWidgets('retrying after a failed load makes the users available', (tester) async {
+    final users = FakeUserRepository(error: ApiException('Erreur serveur (500)', status: 500));
+    await pumpForm(tester, users: users);
+    expect(find.text('Chargement impossible'), findsOneWidget);
+    users.error = null;
+    await tester.tap(find.text('Réessayer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Chargement impossible'), findsNothing);
+    await choose(tester, 'Utilisateur', 'Ana Dossou — ana@pointage.bj');
+    expect(find.text('Ana Dossou — ana@pointage.bj'), findsOneWidget);
+  });
+
+  testWidgets('the form fits a 360 px phone, dropdown open', (tester) async {
+    await pumpForm(tester, width: 360);
+    await tester.tap(find.widgetWithText(InputDecorator, 'Utilisateur'));
+    await tester.pumpAndSettle();
+    expect(find.text('Ana Dossou — ana@pointage.bj'), findsWidgets);
+    expect(tester.takeException(), isNull);
   });
 }
