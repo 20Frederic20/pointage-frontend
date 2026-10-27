@@ -23,9 +23,10 @@ void main() {
   });
 
   test('EmployeeDraft sends snake_case and omits empty optional fields', () {
-    const draft = EmployeeDraft(userId: 'usr1', directoryId: 'dir1', employeeNumber: 'EMP0000001', phone: '');
+    const draft = EmployeeDraft(
+        email: 'ana@pointage.bj', password: '', directoryId: 'dir1', employeeNumber: 'EMP0000001', phone: '');
     expect(draft.toJson(), {
-      'user_id': 'usr1',
+      'email': 'ana@pointage.bj',
       'directory_id': 'dir1',
       'employee_number': 'EMP0000001',
       'role': 'EMPLOYEE',
@@ -35,7 +36,10 @@ void main() {
 
   test('EmployeeDraft sends the optional fields when set', () {
     final draft = EmployeeDraft(
-      userId: 'usr1',
+      email: 'ana@pointage.bj',
+      password: 's3cret-pass',
+      firstName: 'Ana',
+      lastName: 'Dossou',
       directoryId: 'dir1',
       employeeNumber: 'EMP0000001',
       role: Role.hr,
@@ -48,6 +52,9 @@ void main() {
     expect(draft.toJson(), containsPair('site_id', 'sit1'));
     expect(draft.toJson(), containsPair('phone', '0102030405'));
     expect(draft.toJson(), containsPair('role', 'HR'));
+    expect(draft.toJson(), containsPair('password', 's3cret-pass'));
+    expect(draft.toJson(), containsPair('first_name', 'Ana'));
+    expect(draft.toJson(), containsPair('last_name', 'Dossou'));
   });
 
   test('EmployeeFilters is empty only without any criterion', () {

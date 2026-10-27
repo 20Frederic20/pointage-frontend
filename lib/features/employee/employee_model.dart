@@ -51,10 +51,14 @@ class EmployeeFilters {
   bool get isEmpty => search.isEmpty && role == null && isActive == null;
 }
 
-/// Données du formulaire de création (`POST /employees`).
+/// Données du formulaire de création (`POST /employees/onboard`) : le compte et l'employé
+/// sont créés ensemble par le backend, ou pas du tout.
 class EmployeeDraft {
   const EmployeeDraft({
-    required this.userId,
+    required this.email,
+    this.password,
+    this.firstName,
+    this.lastName,
     required this.directoryId,
     required this.employeeNumber,
     this.role = Role.employee,
@@ -64,7 +68,12 @@ class EmployeeDraft {
     this.assignmentStartDate,
   });
 
-  final String userId;
+  final String email;
+
+  /// null ou vide = connexion par code reçu par email.
+  final String? password;
+  final String? firstName;
+  final String? lastName;
   final String directoryId;
   final String employeeNumber;
   final Role role;
@@ -77,9 +86,12 @@ class EmployeeDraft {
   /// null = aujourd'hui (décidé par le backend).
   final DateTime? assignmentStartDate;
 
-  /// En snake_case : `CreateEmployeeRequest` n'accepte pas le camelCase.
+  /// En snake_case : `OnboardEmployeeRequest` n'accepte pas le camelCase.
   Map<String, dynamic> toJson() => {
-        'user_id': userId,
+        'email': email,
+        if (password != null && password!.isNotEmpty) 'password': password,
+        if (firstName != null && firstName!.isNotEmpty) 'first_name': firstName,
+        if (lastName != null && lastName!.isNotEmpty) 'last_name': lastName,
         'directory_id': directoryId,
         'employee_number': employeeNumber,
         'role': role.wire,

@@ -29,7 +29,7 @@ class EmployeeRepository {
       Employee.fromJson(await _api.get('/employees/$id', accessToken: accessToken) as Map<String, dynamic>);
 
   Future<Employee> create(String accessToken, EmployeeDraft draft) async =>
-      Employee.fromJson(await _api.post('/employees', draft.toJson(), accessToken: accessToken));
+      Employee.fromJson(await _api.post('/employees/onboard', draft.toJson(), accessToken: accessToken));
 }
 
 final employeeRepositoryProvider = Provider((ref) => EmployeeRepository(ref.watch(apiClientProvider)));

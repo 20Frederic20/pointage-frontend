@@ -51,11 +51,12 @@ void main() {
         throwsA(isA<ApiException>().having((e) => e.status, 'status', 404)));
   });
 
-  test('create posts the draft and returns the created employee', () async {
+  test('create onboards the account and the employee in one request', () async {
     final e = await repo(201, _employeeJson)
-        .create('tok', const EmployeeDraft(userId: 'usr1', directoryId: 'dir1', employeeNumber: 'EMP0000001'));
+        .create('tok', const EmployeeDraft(email: 'ana@pointage.bj', directoryId: 'dir1', employeeNumber: 'EMP0000001'));
     expect(sent.single.method, 'POST');
-    expect(jsonDecode(sent.single.body), containsPair('user_id', 'usr1'));
+    expect(sent.single.url.path, '/employees/onboard');
+    expect(jsonDecode(sent.single.body), containsPair('email', 'ana@pointage.bj'));
     expect(e.id, 'emp1');
   });
 }

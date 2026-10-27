@@ -88,7 +88,7 @@ class FakeEmployeeRepository implements EmployeeRepository {
     if (createError case final error?) throw error;
     final created = Employee(
       id: 'emp${all.length + 1}',
-      userId: draft.userId,
+      userId: 'usr${all.length + 1}',
       employeeNumber: draft.employeeNumber,
       role: draft.role,
       isActive: draft.isActive,

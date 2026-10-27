@@ -9,7 +9,7 @@ import 'package:pointage/features/employee/employee_repository.dart';
 
 import '../../../helpers/fakes.dart';
 
-const draft = EmployeeDraft(userId: 'usr1', directoryId: 'dir1', employeeNumber: 'EMP0000099');
+const draft = EmployeeDraft(email: 'ana@pointage.bj', directoryId: 'dir1', employeeNumber: 'EMP0000099');
 
 void main() {
   late FakeEmployeeRepository repo;

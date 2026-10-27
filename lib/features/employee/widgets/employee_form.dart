@@ -5,11 +5,11 @@ import '../../../core/format.dart';
 import '../../../core/role.dart';
 import '../../../core/theme.dart';
 import '../../directory/directory_controller.dart';
-import '../../user/user_controller.dart';
 import '../employee_controller.dart';
 import '../employee_model.dart';
 
-/// Formulaire de création. Les règles reprennent celles du backend (`CreateEmployeeRequest`).
+/// Formulaire de création : le compte et l'employé en une fois.
+/// Les règles reprennent celles du backend (`OnboardEmployeeRequest`).
 class EmployeeForm extends ConsumerStatefulWidget {
   const EmployeeForm({super.key, required this.onCreated, this.title});
 
@@ -24,9 +24,12 @@ class EmployeeForm extends ConsumerStatefulWidget {
 
 class _EmployeeFormState extends ConsumerState<EmployeeForm> {
   final _formKey = GlobalKey<FormState>();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
   final _number = TextEditingController();
   final _phone = TextEditingController();
-  String? _userId;
   String? _directoryId;
   String? _siteId;
   Role _role = Role.employee;
@@ -38,6 +41,9 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
 
   @override
   void dispose() {
+    for (final c in [_email, _password, _firstName, _lastName]) {
+      c.dispose();
+    }
     _number.dispose();
     _phone.dispose();
     super.dispose();
@@ -48,6 +54,17 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
     if (s.isEmpty) return required ? 'Champ obligatoire' : null;
     return s.length < 10 || s.length > 20 ? 'Entre 10 et 20 caractères' : null;
   }
+
+  static String? _emailFormat(String? v) {
+    final s = v?.trim() ?? '';
+    if (s.isEmpty) return 'Champ obligatoire';
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(s) ? null : 'Email invalide';
+  }
+
+  static String? _name(String? v) => (v?.trim() ?? '').isEmpty ? 'Champ obligatoire' : null;
+
+  /// Facultatif ; s'il est saisi, 8 caractères au moins comme le backend.
+  static String? _passwordLength(String? v) => v != null && v.isNotEmpty && v.length < 8 ? 'Au moins 8 caractères' : null;
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -63,15 +80,14 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
   Future<void> _submit() async {
     final valid = _formKey.currentState!.validate();
     // Une liste en échec n'est pas un champ de formulaire : on la vérifie à part.
-    setState(() => _missing = _userId == null
-        ? 'Choisissez un utilisateur.'
-        : _directoryId == null
-            ? 'Choisissez un annuaire.'
-            : null);
+    setState(() => _missing = _directoryId == null ? 'Choisissez un annuaire.' : null);
     if (!valid || _missing != null) return;
     final phone = _phone.text.trim();
     final created = await ref.read(employeeFormControllerProvider.notifier).submit(EmployeeDraft(
-          userId: _userId!,
+          email: _email.text.trim(),
+          password: _password.text.isEmpty ? null : _password.text,
+          firstName: _firstName.text.trim(),
+          lastName: _lastName.text.trim(),
           directoryId: _directoryId!,
           employeeNumber: _number.text.trim(),
           role: _role,
@@ -97,14 +113,37 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             Text(title, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
           ],
-          _OptionsField(
-            label: 'Utilisateur',
-            options: ref.watch(allUsersProvider).whenData((users) => {for (final u in users) u.id: u.displayName}),
-            value: _userId,
-            onRetry: () => ref.invalidate(allUsersProvider),
-            onChanged: (v) => setState(() => _userId = v),
+          const _Section('Compte'),
+          TextFormField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(labelText: 'Email'),
+            validator: _emailFormat,
           ),
           const SizedBox(height: 16),
+          TextFormField(
+            controller: _firstName,
+            decoration: const InputDecoration(labelText: 'Prénom'),
+            validator: _name,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _lastName,
+            decoration: const InputDecoration(labelText: 'Nom'),
+            validator: _name,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _password,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Mot de passe (facultatif)',
+              helperText: 'Sans mot de passe, connexion par code reçu par email',
+            ),
+            validator: _passwordLength,
+          ),
+          const SizedBox(height: 24),
+          const _Section('Poste'),
           _OptionsField(
             label: 'Annuaire',
             options: ref
@@ -193,6 +232,17 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
       ),
     );
   }
+}
+
+class _Section extends StatelessWidget {
+  const _Section(this.title);
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: AppColors.green)),
+      );
 }
 
 /// Liste déroulante alimentée par le backend (id → libellé), avec chargement et nouvel essai.

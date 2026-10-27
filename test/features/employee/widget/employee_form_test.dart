@@ -6,7 +6,6 @@ import 'package:pointage/features/directory/directory_repository.dart';
 import 'package:pointage/features/employee/employee_model.dart';
 import 'package:pointage/features/employee/employee_repository.dart';
 import 'package:pointage/features/employee/widgets/employee_form.dart';
-import 'package:pointage/features/user/user_repository.dart';
 
 import '../../../helpers/fakes.dart';
 import '../../../helpers/pump.dart';
@@ -15,19 +14,19 @@ void main() {
   late FakeEmployeeRepository repo;
   late Employee? created;
 
-  List<Override> overrides({FakeUserRepository? users}) => [
+  List<Override> overrides({FakeDirectoryRepository? directories}) => [
         fakeSession(),
         employeeRepositoryProvider.overrideWithValue(repo),
-        userRepositoryProvider.overrideWithValue(users ?? FakeUserRepository()),
-        directoryRepositoryProvider.overrideWithValue(FakeDirectoryRepository()),
+        directoryRepositoryProvider.overrideWithValue(directories ?? FakeDirectoryRepository()),
       ];
 
-  Future<void> pumpForm(WidgetTester tester, {FakeUserRepository? users, double width = 800}) => pumpAtWidth(
+  Future<void> pumpForm(WidgetTester tester, {FakeDirectoryRepository? directories, double width = 800}) =>
+      pumpAtWidth(
         tester,
         width,
         Scaffold(body: EmployeeForm(onCreated: (e) => created = e)),
-        height: 1400,
-        overrides: overrides(users: users),
+        height: 1600,
+        overrides: overrides(directories: directories),
       );
 
   Future<void> choose(WidgetTester tester, String fieldLabel, String option) async {
@@ -35,6 +34,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(option).last);
     await tester.pumpAndSettle();
+  }
+
+  Future<void> type(WidgetTester tester, String fieldLabel, String text) =>
+      tester.enterText(find.widgetWithText(TextFormField, fieldLabel), text);
+
+  Future<void> fillAccount(WidgetTester tester) async {
+    await type(tester, 'Email', ' ana@pointage.bj ');
+    await type(tester, 'Prénom', ' Ana ');
+    await type(tester, 'Nom', 'Dossou');
   }
 
   Future<void> submit(WidgetTester tester) async {
@@ -51,10 +59,14 @@ void main() {
   testWidgets('required fields and lengths are checked before sending', (tester) async {
     await pumpForm(tester);
     await submit(tester);
-    expect(find.text('Champ obligatoire'), findsNWidgets(3)); // utilisateur, annuaire, matricule
-    await tester.enterText(find.widgetWithText(TextFormField, 'Matricule'), 'EMP1');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Téléphone (facultatif)'), '123');
+    expect(find.text('Champ obligatoire'), findsNWidgets(5)); // email, prénom, nom, annuaire, matricule
+    await type(tester, 'Email', 'ana@');
+    await type(tester, 'Mot de passe (facultatif)', 'court');
+    await type(tester, 'Matricule', 'EMP1');
+    await type(tester, 'Téléphone (facultatif)', '123');
     await submit(tester);
+    expect(find.text('Email invalide'), findsOneWidget);
+    expect(find.text('Au moins 8 caractères'), findsOneWidget);
     expect(find.text('Entre 10 et 20 caractères'), findsNWidgets(2));
     expect(repo.lastDraft, isNull);
   });
@@ -67,60 +79,71 @@ void main() {
     expect(find.text('Site principal'), findsOneWidget);
   });
 
-  testWidgets('a valid form sends the draft and reports the new employee', (tester) async {
+  testWidgets('a valid form sends the account and the employee together', (tester) async {
     await pumpForm(tester);
-    await choose(tester, 'Utilisateur', 'Ana Dossou — ana@pointage.bj');
+    await fillAccount(tester);
+    await type(tester, 'Mot de passe (facultatif)', 's3cret-pass');
     await choose(tester, 'Annuaire', 'Direction générale (DG)');
     await choose(tester, 'Site (facultatif)', 'Siège Cotonou');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Matricule'), ' EMP0000099 ');
+    await type(tester, 'Matricule', ' EMP0000099 ');
     await submit(tester);
-    expect(repo.lastDraft?.userId, 'usr1');
-    expect(repo.lastDraft?.directoryId, 'dir1');
-    expect(repo.lastDraft?.siteId, 'sit1');
-    expect(repo.lastDraft?.employeeNumber, 'EMP0000099');
-    expect(repo.lastDraft?.phone, isNull);
+    final draft = repo.lastDraft;
+    expect(draft?.email, 'ana@pointage.bj');
+    expect(draft?.firstName, 'Ana');
+    expect(draft?.lastName, 'Dossou');
+    expect(draft?.password, 's3cret-pass');
+    expect(draft?.directoryId, 'dir1');
+    expect(draft?.siteId, 'sit1');
+    expect(draft?.employeeNumber, 'EMP0000099');
+    expect(draft?.phone, isNull);
     expect(created?.employeeNumber, 'EMP0000099');
   });
 
-  testWidgets('a backend refusal stays in the form', (tester) async {
-    repo.createError = ApiException('Ce matricule est déjà utilisé.', status: 409);
+  testWidgets('without a password the account logs in with an emailed code', (tester) async {
     await pumpForm(tester);
-    await choose(tester, 'Utilisateur', 'Ana Dossou — ana@pointage.bj');
+    await fillAccount(tester);
     await choose(tester, 'Annuaire', 'Direction générale (DG)');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Matricule'), 'EMP0000099');
+    await type(tester, 'Matricule', 'EMP0000099');
     await submit(tester);
-    expect(find.text('Ce matricule est déjà utilisé.'), findsOneWidget);
+    expect(repo.lastDraft?.password, isNull);
+  });
+
+  testWidgets('a backend refusal stays in the form', (tester) async {
+    repo.createError = ApiException('Cet email est déjà utilisé.', status: 409);
+    await pumpForm(tester);
+    await fillAccount(tester);
+    await choose(tester, 'Annuaire', 'Direction générale (DG)');
+    await type(tester, 'Matricule', 'EMP0000099');
+    await submit(tester);
+    expect(find.text('Cet email est déjà utilisé.'), findsOneWidget);
     expect(created, isNull);
   });
 
-  testWidgets('options that failed to load can be retried and block the submit', (tester) async {
-    await pumpForm(tester, users: FakeUserRepository(error: ApiException('Erreur serveur (500)', status: 500)));
+  testWidgets('directories that failed to load can be retried and block the submit', (tester) async {
+    final directories = FakeDirectoryRepository(error: ApiException('Erreur serveur (500)', status: 500));
+    await pumpForm(tester, directories: directories);
     expect(find.text('Chargement impossible'), findsOneWidget);
-    await choose(tester, 'Annuaire', 'Direction générale (DG)');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Matricule'), 'EMP0000099');
+    await fillAccount(tester);
+    await type(tester, 'Matricule', 'EMP0000099');
     await submit(tester);
     expect(tester.takeException(), isNull);
     expect(repo.lastDraft, isNull);
-    expect(find.text('Choisissez un utilisateur.'), findsOneWidget);
-  });
+    expect(find.text('Choisissez un annuaire.'), findsOneWidget);
 
-  testWidgets('retrying after a failed load makes the users available', (tester) async {
-    final users = FakeUserRepository(error: ApiException('Erreur serveur (500)', status: 500));
-    await pumpForm(tester, users: users);
-    expect(find.text('Chargement impossible'), findsOneWidget);
-    users.error = null;
+    directories.error = null;
+    await tester.ensureVisible(find.text('Réessayer'));
     await tester.tap(find.text('Réessayer'));
     await tester.pumpAndSettle();
     expect(find.text('Chargement impossible'), findsNothing);
-    await choose(tester, 'Utilisateur', 'Ana Dossou — ana@pointage.bj');
-    expect(find.text('Ana Dossou — ana@pointage.bj'), findsOneWidget);
+    await choose(tester, 'Annuaire', 'Direction générale (DG)');
+    expect(find.text('Direction générale (DG)'), findsOneWidget);
   });
 
   testWidgets('the form fits a 360 px phone, dropdown open', (tester) async {
     await pumpForm(tester, width: 360);
-    await tester.tap(find.widgetWithText(InputDecorator, 'Utilisateur'));
+    await tester.tap(find.widgetWithText(InputDecorator, 'Annuaire'));
     await tester.pumpAndSettle();
-    expect(find.text('Ana Dossou — ana@pointage.bj'), findsWidgets);
+    expect(find.text('Direction générale (DG)'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }
