@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pointage/features/punch/assisted_punch_controller.dart';
 import 'package:pointage/features/punch/assisted_punch_screen.dart';
@@ -192,5 +193,22 @@ void main() {
       ],
     );
     expect(find.widgetWithText(FilledButton, 'Pointer'), findsNothing);
+  });
+
+  testWidgets('a failing camera shows a message and stays on the selfie step', (tester) async {
+    await pumpAtWidth(tester, 400, const AssistedPunchScreen(), overrides: [
+      fakeSession(),
+      punchRepositoryProvider.overrideWithValue(FakePunchRepository()),
+      selfiePickerProvider.overrideWithValue(() async => throw PlatformException(code: 'camera_access_denied')),
+    ]);
+    await tester.enterText(find.byType(TextField), 'EMP0000002');
+    await tester.tap(find.text('Vérifier'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("C'est moi"));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Prendre le selfie'));
+    await tester.pumpAndSettle();
+    expect(find.text("Autorisez l'appareil photo pour prendre le selfie."), findsOneWidget);
+    expect(find.text('Prendre le selfie'), findsOneWidget);
   });
 }

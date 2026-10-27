@@ -1,3 +1,5 @@
+import 'dart:async' show TimeoutException;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -106,10 +108,18 @@ class AssistedPunchController extends Notifier<AssistedPunchState> {
             contentType: contentType,
             idempotencyKey: _key ??= newIdempotencyKey(),
           );
+      if (!ref.mounted) return;
       state = state.copyWith(step: AssistedStep.done, entry: entry);
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(step: AssistedStep.error, error: _sendMessage(e));
     }
+  }
+
+  /// Le sélecteur de selfie a échoué (permission refusée, plugin) : on reste sur l'étape selfie.
+  void selfieFailed() {
+    if (state.colleague == null) return;
+    state = state.copyWith(step: AssistedStep.selfie, error: "Autorisez l'appareil photo pour prendre le selfie.");
   }
 
   /// Nouvelle tentative : repart de zéro avec une nouvelle clé d'idempotence.
@@ -127,11 +137,13 @@ String _lookupMessage(Object e) => switch (e) {
 
 String _sendMessage(Object e) => switch (e) {
   ApiException(:final message) => message,
+  TimeoutException() =>
+    "Position introuvable, réessayez à l'extérieur ou près d'une fenêtre.",
   _ => 'Pointage impossible, vérifiez la connexion.',
 };
 
 final assistedPunchControllerProvider =
-    NotifierProvider<AssistedPunchController, AssistedPunchState>(
+    NotifierProvider.autoDispose<AssistedPunchController, AssistedPunchState>(
       AssistedPunchController.new,
     );
 

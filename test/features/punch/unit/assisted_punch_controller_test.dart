@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pointage/core/api_client.dart';
@@ -23,6 +25,7 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+    container.listen(assistedPunchControllerProvider, (_, _) {}); // garde l'état (autoDispose)
   });
 
   AssistedPunchController ctrl() =>
@@ -111,5 +114,12 @@ void main() {
     await toSelfie();
     await ctrl().send();
     expect(container.read(punchControllerProvider).last, isNull);
+  });
+
+  test('a GPS timeout gives a location message', () async {
+    await toSelfie();
+    repo.punchForError = TimeoutException('gps');
+    await ctrl().send();
+    expect(state().error, "Position introuvable, réessayez à l'extérieur ou près d'une fenêtre.");
   });
 }

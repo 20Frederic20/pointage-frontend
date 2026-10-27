@@ -36,11 +36,14 @@ class _AssistedPunchScreenState extends ConsumerState<AssistedPunchScreen> {
   }
 
   Future<void> _pick() async {
-    final picked = await ref.read(selfiePickerProvider)();
-    if (picked == null || !mounted) return;
-    ref
-        .read(assistedPunchControllerProvider.notifier)
-        .setSelfie(picked.$1, picked.$2);
+    final c = ref.read(assistedPunchControllerProvider.notifier);
+    try {
+      final picked = await ref.read(selfiePickerProvider)();
+      if (picked == null || !mounted) return;
+      c.setSelfie(picked.$1, picked.$2);
+    } catch (_) {
+      if (mounted) c.selfieFailed();
+    }
   }
 
   @override
