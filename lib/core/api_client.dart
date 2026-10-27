@@ -41,6 +41,7 @@ const _messages = {
   'SELF_MANAGER_PUNCH': 'Utilisez votre propre pointage pour vous-même.',
   'ANOMALY_ALREADY_DECIDED': 'Cette anomalie a déjà été traitée.',
   'DECISION_COMMENT_REQUIRED': 'Un commentaire est obligatoire pour rejeter.',
+  'DECISION_COMMENT_TOO_LONG': 'Le commentaire ne doit pas dépasser 512 caractères.',
   'SELF_DECISION': 'Vous ne pouvez pas traiter une anomalie qui vous concerne.',
   'NOT_FOUND': 'Élément introuvable.',
   'CONFLICT': 'Conflit : cet élément existe déjà ou a été modifié entre-temps.',
