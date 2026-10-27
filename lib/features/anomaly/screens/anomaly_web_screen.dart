@@ -42,7 +42,7 @@ class _AnomalyWebScreenState extends ConsumerState<AnomalyWebScreen> {
     if (Breakpoints.of(context) == WindowSize.expanded) {
       setState(() => _selectedId = anomaly.id);
     } else {
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => _AnomalyDetailPage(id: anomaly.id)));
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => _AnomalyDetailPage(anomaly: anomaly)));
     }
   }
 
@@ -133,20 +133,19 @@ class _AnomalyWebScreenState extends ConsumerState<AnomalyWebScreen> {
   }
 }
 
-/// Détail plein écran. Se ferme après une décision.
+/// Détail plein écran. Se ferme après une décision. Si l'anomalie quitte la liste (décidée, filtre),
+/// la page garde celle qui a été ouverte le temps de se fermer.
 class _AnomalyDetailPage extends ConsumerWidget {
-  const _AnomalyDetailPage({required this.id});
-  final String id;
+  const _AnomalyDetailPage({required this.anomaly});
+  final Anomaly anomaly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final anomaly = ref.watch(anomalyControllerProvider).items.where((a) => a.id == id).firstOrNull;
+    final current = ref.watch(anomalyControllerProvider).items.where((a) => a.id == anomaly.id).firstOrNull;
     return Scaffold(
       appBar: AppBar(title: const Text('Anomalie')),
       body: SafeArea(
-        child: anomaly == null
-            ? const EmptyState(icon: Icons.report_problem_outlined, message: 'Anomalie introuvable')
-            : AnomalyDetailView(anomaly: anomaly, onDecided: () => Navigator.of(context).maybePop()),
+        child: AnomalyDetailView(anomaly: current ?? anomaly, onDecided: () => Navigator.of(context).maybePop()),
       ),
     );
   }

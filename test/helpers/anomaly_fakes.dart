@@ -5,7 +5,7 @@ import 'package:pointage/core/paged.dart';
 import 'package:pointage/features/anomaly/anomaly_model.dart';
 import 'package:pointage/features/anomaly/anomaly_repository.dart';
 
-Anomaly fakeAnomaly(int n, {String status = 'OPEN', bool hasPhoto = false}) => Anomaly(
+Anomaly fakeAnomaly(int n, {String status = 'OPEN', bool hasPhoto = false, String? siteName}) => Anomaly(
       id: 'an$n',
       type: 'ASSISTED_POINTING',
       severity: 'BLOCKING',
@@ -19,6 +19,7 @@ Anomaly fakeAnomaly(int n, {String status = 'OPEN', bool hasPhoto = false}) => A
       occuredAt: DateTime(2026, 10, 27, 8, 5),
       entryType: 'IN',
       hasPhoto: hasPhoto,
+      siteName: siteName,
     );
 
 /// 1x1 PNG.
@@ -39,6 +40,9 @@ class FakeAnomalyRepository implements AnomalyRepository {
   Object? decisionError;
   Object? listError;
 
+  /// Le modèle de lecture est en retard : une décision réussit mais `list` renvoie encore l'ancien état.
+  bool readModelLags = false;
+
   @override
   Future<Paged<Anomaly>> list(String accessToken, {String? status, int limit = 20, int offset = 0}) async {
     listStatuses.add(status);
@@ -55,13 +59,15 @@ class FakeAnomalyRepository implements AnomalyRepository {
     if (decisionError case final e?) throw e;
     final i = all.indexWhere((a) => a.id == id);
     final old = all[i];
-    return all[i] = Anomaly(
+    final decided = Anomaly(
       id: old.id, type: old.type, severity: old.severity, status: status,
       employeeNumber: old.employeeNumber, employeeFirstName: old.employeeFirstName,
       employeeLastName: old.employeeLastName, assistedByFirstName: old.assistedByFirstName,
       assistedByLastName: old.assistedByLastName, occuredAt: old.occuredAt, entryType: old.entryType,
-      hasPhoto: old.hasPhoto, decisionComment: comment,
+      hasPhoto: old.hasPhoto, decisionComment: comment, siteName: old.siteName,
     );
+    if (!readModelLags) all[i] = decided;
+    return decided;
   }
 
   @override

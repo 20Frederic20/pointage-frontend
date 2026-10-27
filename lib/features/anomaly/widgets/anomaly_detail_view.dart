@@ -65,6 +65,7 @@ class _AnomalyDetailViewState extends ConsumerState<AnomalyDetailView> {
       const SizedBox(height: 16),
       _Selfie(anomaly: a),
       const SizedBox(height: 16),
+      _Field(label: 'Site', value: a.siteName ?? '—'),
       _Field(label: 'Pointé depuis le téléphone de', value: a.assistedByName.isEmpty ? '—' : a.assistedByName),
       _Field(label: 'Date / heure', value: formatDateTime(a.occuredAt)),
       _Field(label: 'Entrée/Sortie', value: anomalyEntryTypeLabel(a.entryType)),

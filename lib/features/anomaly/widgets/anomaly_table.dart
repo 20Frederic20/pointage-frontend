@@ -22,6 +22,7 @@ class AnomalyTable extends StatelessWidget {
                 showCheckboxColumn: false,
                 columns: const [
                   DataColumn(label: Text('Employé')),
+                  DataColumn(label: Text('Site')),
                   DataColumn(label: Text('Pointé depuis le téléphone de')),
                   DataColumn(label: Text('Date / heure')),
                   DataColumn(label: Text('Entrée/Sortie')),
@@ -38,6 +39,7 @@ class AnomalyTable extends StatelessWidget {
                           Text(a.employeeName.isEmpty ? '—' : a.employeeName),
                           if (a.employeeNumber case final n?) Text(n, style: Theme.of(context).textTheme.bodySmall),
                         ])),
+                        DataCell(Text(a.siteName ?? '—')),
                         DataCell(Text(a.assistedByName.isEmpty ? '—' : a.assistedByName)),
                         DataCell(Text(formatDateTime(a.occuredAt))),
                         DataCell(Text(anomalyEntryTypeLabel(a.entryType))),

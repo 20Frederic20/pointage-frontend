@@ -20,7 +20,9 @@ class AnomalyCard extends StatelessWidget {
         title: Text(anomaly.employeeNumber == null ? name : '$name · ${anomaly.employeeNumber}',
             overflow: TextOverflow.ellipsis),
         subtitle: Text(
-            '${anomalyEntryTypeLabel(anomaly.entryType)} · ${formatDateTime(anomaly.occuredAt)}\n${anomalyStatusLabel(anomaly.status)}'),
+            '${anomalyEntryTypeLabel(anomaly.entryType)} · ${formatDateTime(anomaly.occuredAt)}\n${anomalyStatusLabel(anomaly.status)} · Site : ${anomaly.siteName ?? '—'}',
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2),
         isThreeLine: true,
         trailing: const Icon(Icons.chevron_right),
       ),

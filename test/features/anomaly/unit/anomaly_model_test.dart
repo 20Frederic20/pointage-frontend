@@ -9,12 +9,13 @@ void main() {
       'employeeFirstName': 'Ana', 'employeeLastName': 'Dossou',
       'assistedByFirstName': 'Paul', 'assistedByLastName': 'Kpade',
       'occuredAt': '2026-10-27T08:05:00Z', 'entryType': 'IN', 'hasPhoto': true,
-      'decidedAt': null, 'decisionComment': null,
+      'decidedAt': null, 'decisionComment': null, 'siteName': 'Siège Cotonou',
     });
     expect((a.id, a.status, a.isOpen, a.hasPhoto, a.entryType), ('a1', 'OPEN', true, true, 'IN'));
     expect((a.employeeName, a.assistedByName, a.employeeNumber), ('Ana Dossou', 'Paul Kpade', 'EMP0000001'));
     expect(a.occuredAt, isNotNull);
     expect(a.decidedAt, isNull);
+    expect(a.siteName, 'Siège Cotonou');
   });
 
   test('legacy anomalies without punch data parse', () {
@@ -25,6 +26,7 @@ void main() {
     });
     expect((a.employeeName, a.assistedByName, a.occuredAt, a.entryType, a.employeeNumber), ('', '', null, null, null));
     expect(a.isOpen, isFalse);
+    expect(a.siteName, isNull);
   });
 
   test('status labels are in French', () {

@@ -19,6 +19,7 @@ class Anomaly {
     this.hasPhoto = false,
     this.decidedAt,
     this.decisionComment,
+    this.siteName,
   });
 
   final String id;
@@ -37,6 +38,9 @@ class Anomaly {
   final bool hasPhoto;
   final DateTime? decidedAt;
   final String? decisionComment;
+
+  /// Site de l'employé pointé à la date du pointage ; null s'il n'est pas connu.
+  final String? siteName;
 
   bool get isOpen => status == 'OPEN';
 
@@ -62,6 +66,7 @@ class Anomaly {
         hasPhoto: (j['hasPhoto'] as bool?) ?? false,
         decidedAt: _date(j['decidedAt']),
         decisionComment: j['decisionComment'] as String?,
+        siteName: j['siteName'] as String?,
       );
 }
 
