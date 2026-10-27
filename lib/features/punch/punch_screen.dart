@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
 import '../auth/session_provider.dart';
+import 'assisted_punch_screen.dart';
 import 'punch_controller.dart';
 import 'punch_repository.dart';
 
@@ -61,6 +62,12 @@ class PunchScreen extends ConsumerWidget {
           _StatusBadge(entry: punch.last),
           const Spacer(),
           _PunchButton(loading: punch.loading, onTap: () => ref.read(punchControllerProvider.notifier).punch()),
+          const SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AssistedPunchScreen())),
+            icon: const Icon(Icons.group_outlined),
+            label: const Text('Pointer pour un collègue'),
+          ),
           const Spacer(),
         ]),
       ),
