@@ -53,15 +53,17 @@ class AssistedPunchController extends Notifier<AssistedPunchState> {
     if (number.isEmpty) return;
     try {
       final token = await ref.read(sessionProvider.notifier).accessToken();
-      if (token == null) return;
+      if (token == null || !ref.mounted) return;
       final colleague = await ref
           .read(punchRepositoryProvider)
           .lookupColleague(token, number);
+      if (!ref.mounted) return;
       state = AssistedPunchState(
         step: AssistedStep.confirm,
         colleague: colleague,
       );
     } catch (e) {
+      if (!ref.mounted) return;
       state = AssistedPunchState(
         step: AssistedStep.error,
         error: _lookupMessage(e),
@@ -94,6 +96,7 @@ class AssistedPunchController extends Notifier<AssistedPunchState> {
     state = state.copyWith(step: AssistedStep.sending);
     try {
       final token = await ref.read(sessionProvider.notifier).accessToken();
+      if (!ref.mounted) return;
       if (token == null) {
         // session expirée : main.dart renvoie vers la connexion
         state = state.copyWith(step: AssistedStep.selfie);

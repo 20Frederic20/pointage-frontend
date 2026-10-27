@@ -4,6 +4,9 @@ import 'package:pointage/features/punch/punch_repository.dart';
 /// Repository de pointage en mémoire : enregistre les clés d'idempotence reçues.
 class FakePunchRepository implements PunchRepository {
   Object? lookupError;
+
+  /// Si défini, [lookupColleague] attend ce futur avant de répondre.
+  Future<void>? lookupGate;
   Object? punchForError;
   final List<String?> keys = [];
   final List<({String employeeNumber, List<int> photo, String contentType})>
@@ -14,6 +17,7 @@ class FakePunchRepository implements PunchRepository {
     String accessToken,
     String employeeNumber,
   ) async {
+    await lookupGate;
     if (lookupError case final e?) throw e;
     return Colleague(
       employeeNumber: employeeNumber,

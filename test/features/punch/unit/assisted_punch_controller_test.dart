@@ -122,4 +122,18 @@ void main() {
     await ctrl().send();
     expect(state().error, "Position introuvable, réessayez à l'extérieur ou près d'une fenêtre.");
   });
+
+  test('a lookup finishing after the provider is disposed does not throw', () async {
+    final c = ProviderContainer(overrides: [fakeSession(), punchRepositoryProvider.overrideWithValue(repo)]);
+    addTearDown(c.dispose);
+    await c.read(sessionProvider.future);
+    final gate = Completer<void>();
+    repo.lookupGate = gate.future;
+    final sub = c.listen(assistedPunchControllerProvider, (_, _) {});
+    final pending = c.read(assistedPunchControllerProvider.notifier).lookup('EMP0000002');
+    sub.close(); // plus d'écouteur : le provider est libéré
+    await Future<void>.delayed(Duration.zero);
+    gate.complete();
+    await pending; // ne lève pas
+  });
 }
