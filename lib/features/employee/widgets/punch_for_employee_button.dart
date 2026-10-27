@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
 import '../../auth/session_provider.dart';
+import '../../punch/punch_repository.dart' show newIdempotencyKey;
 import '../employee_model.dart';
 import '../employee_repository.dart';
 
@@ -23,6 +24,11 @@ class PunchForEmployeeButton extends ConsumerStatefulWidget {
 class _PunchForEmployeeButtonState extends ConsumerState<PunchForEmployeeButton> {
   bool _busy = false;
 
+  /// Clé du pointage en cours. Gardée après une erreur réseau (le serveur a peut-être enregistré le
+  /// pointage sans que la réponse arrive) pour qu'un nouvel essai ne crée pas un second pointage ;
+  /// oubliée après un succès ou une réponse d'erreur du serveur.
+  String? _pendingKey;
+
   Future<void> _punch() async {
     if (_busy) return;
     setState(() => _busy = true); // aussi pendant la boîte de dialogue : pas de second dialogue
@@ -36,12 +42,15 @@ class _PunchForEmployeeButtonState extends ConsumerState<PunchForEmployeeButton>
       if (confirmed != true) return;
       final token = await ref.read(sessionProvider.notifier).accessToken();
       if (token == null) throw ApiException('Session expirée, reconnectez-vous.', status: 401);
-      final entry = await ref.read(employeeRepositoryProvider).punchFor(token, widget.employee.id);
+      final key = _pendingKey ??= newIdempotencyKey();
+      final entry = await ref.read(employeeRepositoryProvider).punchFor(token, widget.employee.id, idempotencyKey: key);
+      _pendingKey = null;
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.green,
         content: Text('${entry.isIn ? 'Entrée' : 'Sortie'} enregistrée pour $number à ${_hm(entry.occurredAt)}'),
       ));
     } catch (e) {
+      if (e is ApiException) _pendingKey = null;
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.red,
         content: Text(e is ApiException ? e.message : 'Connexion au serveur impossible, réessayez.'),

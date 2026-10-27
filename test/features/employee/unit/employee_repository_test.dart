@@ -70,4 +70,10 @@ void main() {
     expect(keys.length, 2);
     expect(keys.every((k) => k is String && k.isNotEmpty), isTrue);
   });
+
+  test('punchFor sends the given idempotency key', () async {
+    final r = repo(201, {'entry_type': 'IN', 'occured_at': '2026-10-27T08:05:00Z', 'validation_status': 'COUNTED'});
+    await r.punchFor('tok', 'emp1', idempotencyKey: 'cle-1');
+    expect((jsonDecode(sent.single.body) as Map)['idempotencyKey'], 'cle-1');
+  });
 }

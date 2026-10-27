@@ -67,6 +67,9 @@ class FakeEmployeeRepository implements EmployeeRepository {
 
   /// Identifiants des employés pour lesquels [punchFor] a été appelée.
   final List<String> punched = [];
+
+  /// Clés d'idempotence passées à [punchFor], dans l'ordre des appels.
+  final List<String?> punchKeys = [];
   Object? punchError;
 
   /// Si défini, [punchFor] attend ce futur avant de répondre (requête en cours).
@@ -100,8 +103,9 @@ class FakeEmployeeRepository implements EmployeeRepository {
       all.firstWhere((e) => e.id == id, orElse: () => throw ApiException('Élément introuvable.', status: 404));
 
   @override
-  Future<TimeEntry> punchFor(String accessToken, String employeeId) async {
+  Future<TimeEntry> punchFor(String accessToken, String employeeId, {String? idempotencyKey}) async {
     punched.add(employeeId);
+    punchKeys.add(idempotencyKey);
     await punchGate;
     if (punchError case final error?) throw error;
     return TimeEntry(entryType: punchType, occurredAt: DateTime(2026, 10, 27, 8, 5));

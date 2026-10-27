@@ -70,6 +70,40 @@ void main() {
     expect(find.text('Vous ne pouvez pas pointer pour vous-même.'), findsOneWidget);
   });
 
+  Future<void> confirmPunch(WidgetTester tester) async {
+    await tester.tap(find.byType(PunchForEmployeeButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Faire pointer'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('a retry after a network failure reuses the idempotency key', (tester) async {
+    repo.punchError = Exception('timeout');
+    await pumpButton(tester);
+    await confirmPunch(tester);
+    expect(find.text('Connexion au serveur impossible, réessayez.'), findsOneWidget);
+
+    repo.punchError = null;
+    await confirmPunch(tester);
+    expect(repo.punchKeys, hasLength(2));
+    expect(repo.punchKeys.first, isNotNull);
+    expect(repo.punchKeys.last, repo.punchKeys.first);
+
+    await confirmPunch(tester); // après un succès : nouveau pointage, nouvelle clé
+    expect(repo.punchKeys.last, isNotNull);
+    expect(repo.punchKeys.last, isNot(repo.punchKeys[1]));
+  });
+
+  testWidgets('an ApiException drops the idempotency key', (tester) async {
+    repo.punchError = ApiException('Vous ne pouvez pas pointer pour vous-même.', status: 409);
+    await pumpButton(tester);
+    await confirmPunch(tester);
+    repo.punchError = null;
+    await confirmPunch(tester);
+    expect(repo.punchKeys, hasLength(2));
+    expect(repo.punchKeys.last, isNot(repo.punchKeys.first));
+  });
+
   testWidgets('the button is disabled while the request runs', (tester) async {
     final gate = Completer<void>();
     repo.punchGate = gate.future;
