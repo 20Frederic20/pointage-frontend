@@ -6,6 +6,7 @@ import '../../../core/widgets/state_views.dart';
 import '../employee_controller.dart';
 import '../employee_model.dart';
 import 'employee_badges.dart';
+import 'punch_for_employee_button.dart';
 
 /// Contenu de la fiche, partagé par le panneau (grand écran) et la page (petit écran).
 class EmployeeDetailView extends ConsumerWidget {
@@ -34,6 +35,10 @@ class _Details extends StatelessWidget {
           RoleBadge(role: employee.role),
           StatusPill(isActive: employee.isActive),
         ]),
+        if (employee.isActive) ...[
+          const SizedBox(height: 12),
+          Align(alignment: Alignment.centerLeft, child: PunchForEmployeeButton(employee: employee, labeled: true)),
+        ],
         const Divider(height: 32),
         _Field(label: 'Téléphone', value: employee.phone ?? '—'),
         _Field(label: 'Créé le', value: formatDate(employee.createdAt)),

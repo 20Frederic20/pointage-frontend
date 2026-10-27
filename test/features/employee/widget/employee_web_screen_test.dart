@@ -117,4 +117,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DataTable), findsOneWidget);
   });
+
+  testWidgets('1440 px: each row has a « Faire pointer » action; none for inactive employees', (tester) async {
+    repo = FakeEmployeeRepository([fakeEmployee(1), fakeEmployee(2, isActive: false)]);
+    await pumpScreen(tester, 1440);
+    expect(find.text('Actions'), findsOneWidget);
+    expect(find.byTooltip('Faire pointer'), findsOneWidget);
+    await tester.tap(find.byTooltip('Faire pointer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Faire pointer'));
+    await tester.pumpAndSettle();
+    expect(repo.punched, ['emp1']);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('360 px: cards carry the action and the detail panel offers the labelled button', (tester) async {
+    repo = FakeEmployeeRepository([fakeEmployee(1)]);
+    await pumpScreen(tester, 360, height: 740);
+    expect(find.descendant(of: find.byType(EmployeeCard), matching: find.byTooltip('Faire pointer')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('1440 px: the side panel has a labelled « Faire pointer » button', (tester) async {
+    repo = FakeEmployeeRepository([fakeEmployee(1)]);
+    await pumpScreen(tester, 1440);
+    await tester.tap(find.descendant(of: find.byType(DataTable), matching: find.text('EMP0000001')));
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: find.byType(EmployeeDetailPanel), matching: find.text('Faire pointer')), findsOneWidget);
+  });
 }
