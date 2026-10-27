@@ -58,4 +58,65 @@ void main() {
   test('an empty success body decodes to an empty map', () async {
     expect(await clientReplying(202, null).post('/auth/otp/request', {'identifier': 'x'}), isEmpty);
   });
+
+  test('postMultipart sends the file part, the fields and the bearer token', () async {
+    late http.BaseRequest sent;
+    late String body;
+    final api = ApiClient(MockClient((req) async {
+      sent = req;
+      body = req.body;
+      return http.Response('{"id":"e1"}', 201);
+    }));
+    final data = await api.postMultipart('/assisted-punches', {'employee_number': 'EMP0000002'},
+        fileField: 'photo', bytes: [1, 2, 3], filename: 'selfie.jpg', contentType: 'image/jpeg', accessToken: 'tok');
+    expect(data, {'id': 'e1'});
+    expect(sent.method, 'POST');
+    expect(sent.url.path, '/assisted-punches');
+    expect(sent.headers['Authorization'], 'Bearer tok');
+    expect(sent.headers['Content-Type'], startsWith('multipart/form-data'));
+    expect(body, contains('name="employee_number"'));
+    expect(body, contains('EMP0000002'));
+    expect(body, contains('name="photo"'));
+    expect(body, contains('filename="selfie.jpg"'));
+    expect(body, contains('image/jpeg'));
+  });
+
+  test('postMultipart maps INVALID_PHOTO to its message', () async {
+    final api = clientReplying(422, {'code': 'INVALID_PHOTO', 'message': 'bad'});
+    await expectLater(
+      api.postMultipart('/x', {}, fileField: 'photo', bytes: [1], filename: 'a.jpg', contentType: 'image/jpeg'),
+      throwsA(isA<ApiException>()
+          .having((e) => e.code, 'code', 'INVALID_PHOTO')
+          .having((e) => e.message, 'message', 'La photo est invalide (JPEG ou PNG, 5 Mo maximum).')),
+    );
+  });
+
+  test('getBytes returns the raw bytes and shares the error handling', () async {
+    late http.Request sent;
+    final ok = ApiClient(MockClient((req) async {
+      sent = req;
+      return http.Response.bytes([9, 8, 7], 200);
+    }));
+    expect(await ok.getBytes('/photo', accessToken: 'tok'), [9, 8, 7]);
+    expect(sent.headers['Authorization'], 'Bearer tok');
+    await expectLater(
+      clientReplying(404, {'code': 'NOT_FOUND'}).getBytes('/photo'),
+      throwsA(isA<ApiException>().having((e) => e.status, 'status', 404)),
+    );
+  });
+
+  test('new assisted-punch codes and the 500 m distance are translated', () async {
+    const expected = {
+      'SELF_ASSISTED_PUNCH': 'Saisissez le matricule du collègue qui pointe, pas le vôtre.',
+      'SELF_MANAGER_PUNCH': 'Utilisez votre propre pointage pour vous-même.',
+      'ANOMALY_ALREADY_DECIDED': 'Cette anomalie a déjà été traitée.',
+      'DECISION_COMMENT_REQUIRED': 'Un commentaire est obligatoire pour rejeter.',
+      'SELF_DECISION': 'Vous ne pouvez pas traiter une anomalie qui vous concerne.',
+      'TOO_FAR_FROM_WORKPLACE': 'Vous êtes trop loin de votre lieu de travail pour pointer (500 m maximum).',
+    };
+    for (final e in expected.entries) {
+      await expectLater(clientReplying(409, {'code': e.key}).get('/x'),
+          throwsA(isA<ApiException>().having((x) => x.message, 'message', e.value)));
+    }
+  });
 }

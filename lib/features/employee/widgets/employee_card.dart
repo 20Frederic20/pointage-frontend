@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../employee_model.dart';
 import 'employee_badges.dart';
+import 'punch_for_employee_button.dart';
 
 /// Ligne de liste pour les petits écrans (web compact et mobile).
 class EmployeeCard extends StatelessWidget {
@@ -24,7 +25,10 @@ class EmployeeCard extends StatelessWidget {
               if (employee.phone case final phone?) Text(phone),
             ]),
           ),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            PunchForEmployeeButton(employee: employee),
+            const Icon(Icons.chevron_right),
+          ]),
         ),
       );
 }

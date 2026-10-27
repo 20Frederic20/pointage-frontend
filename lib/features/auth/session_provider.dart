@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/api_client.dart';
+import '../../core/role.dart';
 import 'auth_repository.dart';
 
 class Session {
@@ -20,6 +21,21 @@ class Session {
 
   /// Matricule ou email saisi à la connexion, affiché en haut de l'écran.
   final String identifier;
+
+  /// Rôle lu dans le jeton d'accès (charge utile base64url, sans vérifier la signature :
+  /// le serveur reste seul juge). Illisible : on retombe sur le rôle le plus bas.
+  Role get role {
+    try {
+      final parts = accessToken.split('.');
+      if (parts.length != 3) return Role.employee;
+      final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+      return Role.fromWire((payload as Map<String, dynamic>)['role'] as String);
+    } catch (_) {
+      return Role.employee;
+    }
+  }
+
+  bool get isResponsible => role != Role.employee;
 
   factory Session.from(TokenPair t, String identifier) => Session(
         accessToken: t.accessToken,

@@ -59,4 +59,22 @@ void main() {
     expect(jsonDecode(sent.single.body), containsPair('email', 'ana@pointage.bj'));
     expect(e.id, 'emp1');
   });
+
+  test('punchFor posts a fresh idempotency key each call and parses the entry', () async {
+    final r = repo(201, {'entry_type': 'OUT', 'occured_at': '2026-10-27T08:05:00Z', 'validation_status': 'COUNTED'});
+    final entry = await r.punchFor('tok', 'emp1');
+    await r.punchFor('tok', 'emp1');
+    expect(sent.first.method, 'POST');
+    expect(sent.first.url.path, '/employees/emp1/time-entries');
+    expect(entry.isIn, isFalse);
+    final keys = sent.map((q) => (jsonDecode(q.body) as Map)['idempotencyKey']).toSet();
+    expect(keys.length, 2);
+    expect(keys.every((k) => k is String && k.isNotEmpty), isTrue);
+  });
+
+  test('punchFor sends the given idempotency key', () async {
+    final r = repo(201, {'entry_type': 'IN', 'occured_at': '2026-10-27T08:05:00Z', 'validation_status': 'COUNTED'});
+    await r.punchFor('tok', 'emp1', idempotencyKey: 'cle-1');
+    expect((jsonDecode(sent.single.body) as Map)['idempotencyKey'], 'cle-1');
+  });
 }

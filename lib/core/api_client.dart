@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 
 /// URL du backend. Par défaut `localhost:8000`, valable partout :
 /// - web : le navigateur tourne sur le PC ;
@@ -26,7 +28,7 @@ const _messages = {
   'INVALID_ACCESS_TOKEN': 'Session expirée, reconnectez-vous.',
   'ACCESS_DENIED': "Vous n'avez pas accès à cette action.",
   'ROLE_PERMISSION_DENIED': "Vous n'avez pas accès à cette action.",
-  'TOO_FAR_FROM_WORKPLACE': 'Vous êtes trop loin de votre lieu de travail pour pointer (100 m maximum).',
+  'TOO_FAR_FROM_WORKPLACE': 'Vous êtes trop loin de votre lieu de travail pour pointer (500 m maximum).',
   'EMPLOYEE_NOT_ASSIGNED': "Vous n'avez pas d'affectation active aujourd'hui. Contactez votre responsable.",
   'EMPLOYEE_WITH_THIS_NUMBER_ALREADY_EXISTS': 'Ce matricule est déjà utilisé.',
   'SITE_NOT_IN_DIRECTORY': "Ce site n'appartient pas à l'annuaire choisi.",
@@ -34,6 +36,13 @@ const _messages = {
   'SITE_INACTIVE': 'Ce site est désactivé.',
   'PUNCH_ALREADY_EXISTS': 'Ce pointage a déjà été enregistré.',
   'INVALID_ENTITY_ID': 'Identifiant invalide.',
+  'SELF_ASSISTED_PUNCH': 'Saisissez le matricule du collègue qui pointe, pas le vôtre.',
+  'INVALID_PHOTO': 'La photo est invalide (JPEG ou PNG, 5 Mo maximum).',
+  'SELF_MANAGER_PUNCH': 'Utilisez votre propre pointage pour vous-même.',
+  'ANOMALY_ALREADY_DECIDED': 'Cette anomalie a déjà été traitée.',
+  'DECISION_COMMENT_REQUIRED': 'Un commentaire est obligatoire pour rejeter.',
+  'DECISION_COMMENT_TOO_LONG': 'Le commentaire ne doit pas dépasser 512 caractères.',
+  'SELF_DECISION': 'Vous ne pouvez pas traiter une anomalie qui vous concerne.',
   'NOT_FOUND': 'Élément introuvable.',
   'CONFLICT': 'Conflit : cet élément existe déjà ou a été modifié entre-temps.',
 };
@@ -66,6 +75,33 @@ class ApiClient {
   Future<dynamic> get(String path, {String? accessToken, Map<String, String>? query}) async {
     final res = await _http.get(_uri(path, query), headers: _headers(accessToken)).timeout(_timeout);
     return _handle(res);
+  }
+
+  /// Envoi `multipart/form-data` (champs texte + un fichier), par exemple un pointage assisté avec selfie.
+  Future<Map<String, dynamic>> postMultipart(
+    String path,
+    Map<String, String> fields, {
+    required String fileField,
+    required List<int> bytes,
+    required String filename,
+    required String contentType,
+    String? accessToken,
+  }) async {
+    final req = http.MultipartRequest('POST', _uri(path))
+      ..fields.addAll(fields)
+      ..files.add(http.MultipartFile.fromBytes(fileField, bytes,
+          filename: filename, contentType: MediaType.parse(contentType)));
+    if (accessToken != null) req.headers['Authorization'] = 'Bearer $accessToken';
+    final res = await http.Response.fromStream(await _http.send(req).timeout(_timeout));
+    return _handle(res) as Map<String, dynamic>;
+  }
+
+  /// Corps brut d'une réponse (image, par exemple) ; mêmes erreurs que [get].
+  Future<Uint8List> getBytes(String path, {String? accessToken}) async {
+    final res = await _http.get(_uri(path), headers: {if (accessToken != null) 'Authorization': 'Bearer $accessToken'}).timeout(_timeout);
+    if (res.statusCode < 400) return res.bodyBytes;
+    _handle(res); // lève l'erreur traduite
+    throw ApiException(_fallback(res.statusCode), status: res.statusCode);
   }
 
   Uri _uri(String path, [Map<String, String>? query]) {

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:pointage/core/api_client.dart';
@@ -8,13 +10,20 @@ import 'package:pointage/features/employee/employee_model.dart';
 import 'package:pointage/features/directory/directory_model.dart';
 import 'package:pointage/features/directory/directory_repository.dart';
 import 'package:pointage/features/employee/employee_repository.dart';
+import 'package:pointage/features/punch/punch_repository.dart';
 import 'package:pointage/features/user/user_model.dart';
 import 'package:pointage/features/user/user_repository.dart';
 
 /// Session ouverte sans stockage sécurisé ni réseau.
 class FakeSession extends SessionNotifier {
-  FakeSession({this.token = 'tok'});
+  /// [role] (valeur du jeton, ex. `HR`) fabrique un jeton JWT portant ce rôle ; sinon [token] tel quel.
+  FakeSession({String? token = 'tok', String? role}) : token = role == null ? token : _tokenWithRole(role);
   final String? token;
+
+  static String _tokenWithRole(String role) {
+    String b64(Object o) => base64Url.encode(utf8.encode(jsonEncode(o))).replaceAll('=', '');
+    return '${b64({'alg': 'none'})}.${b64({'role': role})}.sig';
+  }
 
   @override
   Future<Session?> build() async => Session(
@@ -31,7 +40,8 @@ class FakeSession extends SessionNotifier {
   Future<void> logout() async => state = const AsyncData(null);
 }
 
-Override fakeSession({String? token = 'tok'}) => sessionProvider.overrideWith(() => FakeSession(token: token));
+Override fakeSession({String? token = 'tok', String? role}) =>
+    sessionProvider.overrideWith(() => FakeSession(token: token, role: role));
 
 Employee fakeEmployee(int n, {Role role = Role.employee, bool isActive = true}) => Employee(
       id: 'emp$n',
@@ -54,6 +64,17 @@ class FakeEmployeeRepository implements EmployeeRepository {
   Object? listError;
   Object? createError;
   EmployeeDraft? lastDraft;
+
+  /// Identifiants des employés pour lesquels [punchFor] a été appelée.
+  final List<String> punched = [];
+
+  /// Clés d'idempotence passées à [punchFor], dans l'ordre des appels.
+  final List<String?> punchKeys = [];
+  Object? punchError;
+
+  /// Si défini, [punchFor] attend ce futur avant de répondre (requête en cours).
+  Future<void>? punchGate;
+  String punchType = 'IN';
 
   /// Si défini, [create] attend ce futur avant de répondre (simule une requête en cours).
   Future<void>? createGate;
@@ -80,6 +101,15 @@ class FakeEmployeeRepository implements EmployeeRepository {
   @override
   Future<Employee> getById(String accessToken, String id) async =>
       all.firstWhere((e) => e.id == id, orElse: () => throw ApiException('Élément introuvable.', status: 404));
+
+  @override
+  Future<TimeEntry> punchFor(String accessToken, String employeeId, {String? idempotencyKey}) async {
+    punched.add(employeeId);
+    punchKeys.add(idempotencyKey);
+    await punchGate;
+    if (punchError case final error?) throw error;
+    return TimeEntry(entryType: punchType, occurredAt: DateTime(2026, 10, 27, 8, 5));
+  }
 
   @override
   Future<Employee> create(String accessToken, EmployeeDraft draft) async {
