@@ -6,6 +6,7 @@ import 'package:pointage/core/api_client.dart';
 import 'package:pointage/core/paged.dart';
 import 'package:pointage/core/role.dart';
 import 'package:pointage/features/auth/session_provider.dart';
+import 'package:pointage/features/employee/assignment_model.dart';
 import 'package:pointage/features/employee/employee_model.dart';
 import 'package:pointage/features/directory/directory_model.dart';
 import 'package:pointage/features/directory/directory_repository.dart';
@@ -111,6 +112,63 @@ class FakeEmployeeRepository implements EmployeeRepository {
     return TimeEntry(entryType: punchType, occurredAt: DateTime(2026, 10, 27, 8, 5));
   }
 
+  /// Appels des actions sur la fiche, dans l'ordre : `('update', id, {champs})`, `('deactivate', id, null)`…
+  final List<(String, String, Object?)> actions = [];
+  Object? actionError;
+
+  /// Si défini, chaque action attend ce futur avant de répondre (requête en cours).
+  Future<void>? actionGate;
+  List<Assignment> assignmentList = [];
+
+  Future<Employee> _act(String name, String id, Object? args, Employee Function(Employee) change) async {
+    actions.add((name, id, args));
+    await actionGate;
+    if (actionError case final error?) throw error;
+    final index = all.indexWhere((e) => e.id == id);
+    final updated = change(all[index]);
+    all[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<Employee> update(String accessToken, String id,
+          {String? firstName, String? lastName, String? phone, Role? role}) =>
+      _act('update', id, {'firstName': ?firstName, 'lastName': ?lastName, 'phone': ?phone, 'role': ?role},
+          (e) => copyEmployee(e, phone: phone, role: role, firstName: firstName, lastName: lastName));
+
+  @override
+  Future<Employee> deactivate(String accessToken, String id) =>
+      _act('deactivate', id, null, (e) => copyEmployee(e, isActive: false));
+
+  @override
+  Future<Employee> activate(String accessToken, String id) =>
+      _act('activate', id, null, (e) => copyEmployee(e, isActive: true));
+
+  @override
+  Future<List<Assignment>> assignments(String accessToken, String employeeId) async => assignmentList;
+
+  @override
+  Future<Assignment> assign(String accessToken,
+      {required String employeeId,
+      required String directoryId,
+      required String siteId,
+      required DateTime startDate,
+      DateTime? endDate}) async {
+    actions.add(('assign', employeeId, (directoryId: directoryId, siteId: siteId, startDate: startDate, endDate: endDate)));
+    await actionGate;
+    if (actionError case final error?) throw error;
+    return Assignment(id: 'asg9', directoryId: directoryId, siteId: siteId, startDate: startDate, endDate: endDate);
+  }
+
+  @override
+  Future<Assignment> endAssignment(String accessToken, String assignmentId, DateTime endDate) async {
+    actions.add(('end', assignmentId, endDate));
+    await actionGate;
+    if (actionError case final error?) throw error;
+    final a = assignmentList.firstWhere((a) => a.id == assignmentId);
+    return Assignment(id: a.id, directoryId: a.directoryId, siteId: a.siteId, startDate: a.startDate, endDate: endDate);
+  }
+
   @override
   Future<Employee> create(String accessToken, EmployeeDraft draft) async {
     lastDraft = draft;
@@ -128,6 +186,26 @@ class FakeEmployeeRepository implements EmployeeRepository {
     return created;
   }
 }
+
+Employee copyEmployee(Employee e,
+        {bool? isActive, String? phone, Role? role, String? firstName, String? lastName}) =>
+    Employee(
+      id: e.id,
+      userId: e.userId,
+      employeeNumber: e.employeeNumber,
+      role: role ?? e.role,
+      isActive: isActive ?? e.isActive,
+      phone: phone ?? e.phone,
+      createdAt: e.createdAt,
+      updatedAt: e.updatedAt,
+      firstName: firstName ?? e.firstName,
+      lastName: lastName ?? e.lastName,
+      companyDirectoryId: e.companyDirectoryId,
+      companyName: e.companyName,
+      currentSiteId: e.currentSiteId,
+      currentSiteName: e.currentSiteName,
+      currentAssignmentEndDate: e.currentAssignmentEndDate,
+    );
 
 const ana = AppUser(
     id: 'usr1', email: 'ana@pointage.bj', role: Role.employee, isActive: true, firstName: 'Ana', lastName: 'Dossou');

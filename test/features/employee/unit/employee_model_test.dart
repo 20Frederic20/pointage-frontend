@@ -30,7 +30,7 @@ void main() {
       'directory_id': 'dir1',
       'employee_number': 'EMP0000001',
       'role': 'EMPLOYEE',
-      'is_active': false,
+      'is_active': true, // actif par défaut
     });
   });
 

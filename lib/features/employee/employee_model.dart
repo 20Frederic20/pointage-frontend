@@ -2,11 +2,14 @@ import '../../core/role.dart';
 
 DateTime? _date(Object? v) => v == null ? null : DateTime.parse(v as String).toLocal();
 
-String _isoDate(DateTime d) =>
+/// Date seule (`AAAA-MM-JJ`), telle que le backend l'attend et la renvoie.
+DateTime? _day(Object? v) => v == null ? null : DateTime.parse(v as String);
+
+String isoDate(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-/// Fiche employé (`EmployeeResponse`). Le lien vers l'annuaire passe par les
-/// affectations côté backend : il n'est pas sur l'employé.
+/// Fiche employé (`EmployeeResponse`) : une par entreprise pour une même personne.
+/// Le nom vient du compte, l'entreprise et le site actuel sont calculés par le backend.
 class Employee {
   const Employee({
     required this.id,
@@ -17,6 +20,14 @@ class Employee {
     this.phone,
     this.createdAt,
     this.updatedAt,
+    this.firstName,
+    this.lastName,
+    this.companyDirectoryId,
+    this.companyName,
+    this.currentSiteId,
+    this.currentSiteName,
+    this.currentAssignmentEndDate,
+    this.accountReused = false,
   });
 
   final String id;
@@ -27,6 +38,22 @@ class Employee {
   final String? phone;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? firstName;
+  final String? lastName;
+  final String? companyDirectoryId;
+  final String? companyName;
+  final String? currentSiteId;
+  final String? currentSiteName;
+  final DateTime? currentAssignmentEndDate;
+
+  /// Réponse de création seulement : l'email avait déjà un compte, une fiche y a été ajoutée.
+  final bool accountReused;
+
+  /// « Prénom Nom », ou le matricule quand le compte n'a pas de nom.
+  String get displayName {
+    final name = [?firstName, ?lastName].where((p) => p.trim().isNotEmpty).join(' ');
+    return name.isEmpty ? employeeNumber : name;
+  }
 
   factory Employee.fromJson(Map<String, dynamic> j) => Employee(
         id: j['id'] as String,
@@ -37,6 +64,14 @@ class Employee {
         phone: j['phone'] as String?,
         createdAt: _date(j['createdAt']),
         updatedAt: _date(j['updatedAt']),
+        firstName: j['firstName'] as String?,
+        lastName: j['lastName'] as String?,
+        companyDirectoryId: j['companyDirectoryId'] as String?,
+        companyName: j['companyName'] as String?,
+        currentSiteId: j['currentSiteId'] as String?,
+        currentSiteName: j['currentSiteName'] as String?,
+        currentAssignmentEndDate: _day(j['currentAssignmentEndDate']),
+        accountReused: j['accountReused'] as bool? ?? false,
       );
 }
 
@@ -63,7 +98,7 @@ class EmployeeDraft {
     required this.employeeNumber,
     this.role = Role.employee,
     this.phone,
-    this.isActive = false,
+    this.isActive = true,
     this.siteId,
     this.assignmentStartDate,
   });
@@ -98,6 +133,6 @@ class EmployeeDraft {
         'is_active': isActive,
         if (phone != null && phone!.isNotEmpty) 'phone': phone,
         if (siteId != null) 'site_id': siteId,
-        if (assignmentStartDate != null) 'assignment_start_date': _isoDate(assignmentStartDate!),
+        if (assignmentStartDate != null) 'assignment_start_date': isoDate(assignmentStartDate!),
       };
 }

@@ -23,6 +23,16 @@ class ApiException implements Exception {
 /// Codes d'erreur du backend (`DomainErrorSchema.code`) traduits pour l'utilisateur.
 const _messages = {
   'INVALID_LOGIN_CODE': 'Code incorrect ou expiré.',
+  'ROLE_CEILING': 'Vous ne pouvez pas attribuer ou modifier un rôle supérieur au vôtre.',
+  'SELF_DEACTIVATION': 'Vous ne pouvez pas vous désactiver vous-même.',
+  'EMPLOYEE_INACTIVE': 'Cet employé est désactivé.',
+  'EMPLOYEE_ALREADY_INACTIVE': 'Cet employé est déjà désactivé.',
+  'EMPLOYEE_ALREADY_ACTIVE': 'Cet employé est déjà actif.',
+  'ALREADY_ACTIVE_IN_COMPANY': 'Cette personne a déjà une fiche active dans cette entreprise.',
+  'ASSIGNMENT_IN_PAST': 'La date de début ne peut pas être dans le passé.',
+  'FUTURE_ASSIGNMENT_EXISTS': "Une affectation future existe déjà : terminez-la d'abord.",
+  'DIRECTORY_OUTSIDE_COMPANY': "Ce service n'appartient pas à l'entreprise de l'employé.",
+  'OVERLAPPING_EMPLOYEE_ASSIGNMENT': 'Cette affectation chevauche une autre affectation.',
   'NO_ACTIVE_EMPLOYMENT': 'Aucun accès actif : contactez votre responsable.',
   'INVALID_CREDENTIALS': 'Identifiant ou mot de passe incorrect.',
   'INVALID_REFRESH_TOKEN': 'Session expirée, reconnectez-vous.',
@@ -69,6 +79,13 @@ class ApiClient {
   Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body, {String? accessToken}) async {
     final res = await _http
         .post(_uri(path), headers: _headers(accessToken), body: jsonEncode(body))
+        .timeout(_timeout);
+    return _handle(res) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> patch(String path, Map<String, dynamic> body, {String? accessToken}) async {
+    final res = await _http
+        .patch(_uri(path), headers: _headers(accessToken), body: jsonEncode(body))
         .timeout(_timeout);
     return _handle(res) as Map<String, dynamic>;
   }

@@ -119,4 +119,34 @@ void main() {
           throwsA(isA<ApiException>().having((x) => x.message, 'message', e.value)));
     }
   });
+
+  test('patch sends JSON with the bearer token and maps error codes', () async {
+    late http.Request sent;
+    final data = await clientReplying(200, {'id': 'emp1'}, onRequest: (r) => sent = r)
+        .patch('/employees/emp1', {'phone': '0197000000'}, accessToken: 'tok');
+    expect((sent.method, sent.url.path, sent.headers['Authorization']), ('PATCH', '/employees/emp1', 'Bearer tok'));
+    expect(jsonDecode(sent.body), {'phone': '0197000000'});
+    expect(data, {'id': 'emp1'});
+    await expectLater(clientReplying(403, {'code': 'ROLE_CEILING'}).patch('/employees/emp1', {}),
+        throwsA(isA<ApiException>().having((e) => e.message, 'message',
+            'Vous ne pouvez pas attribuer ou modifier un rôle supérieur au vôtre.')));
+  });
+
+  test('the employee-action error codes are translated', () async {
+    const expected = {
+      'SELF_DEACTIVATION': 'Vous ne pouvez pas vous désactiver vous-même.',
+      'EMPLOYEE_INACTIVE': 'Cet employé est désactivé.',
+      'EMPLOYEE_ALREADY_INACTIVE': 'Cet employé est déjà désactivé.',
+      'EMPLOYEE_ALREADY_ACTIVE': 'Cet employé est déjà actif.',
+      'ALREADY_ACTIVE_IN_COMPANY': 'Cette personne a déjà une fiche active dans cette entreprise.',
+      'ASSIGNMENT_IN_PAST': 'La date de début ne peut pas être dans le passé.',
+      'FUTURE_ASSIGNMENT_EXISTS': "Une affectation future existe déjà : terminez-la d'abord.",
+      'DIRECTORY_OUTSIDE_COMPANY': "Ce service n'appartient pas à l'entreprise de l'employé.",
+      'OVERLAPPING_EMPLOYEE_ASSIGNMENT': 'Cette affectation chevauche une autre affectation.',
+    };
+    for (final MapEntry(:key, :value) in expected.entries) {
+      await expectLater(clientReplying(409, {'code': key}).post('/x', {}),
+          throwsA(isA<ApiException>().having((e) => e.message, 'message', value)), reason: key);
+    }
+  });
 }
