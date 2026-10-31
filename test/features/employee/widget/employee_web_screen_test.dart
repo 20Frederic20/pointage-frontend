@@ -148,4 +148,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.descendant(of: find.byType(EmployeeDetailPanel), matching: find.text('Faire pointer')), findsOneWidget);
   });
+
+  testWidgets('1440 px: each row carries the action icons', (tester) async {
+    repo = FakeEmployeeRepository([fakeEmployee(1), fakeEmployee(2, isActive: false)]);
+    await pumpScreen(tester, 1440);
+    final table = find.byType(DataTable);
+    for (final (tooltip, count) in [
+      ('Faire pointer', 1), ('Modifier', 2), ('Désactiver', 1), ('Réactiver', 1), ('Affecter à un site', 1),
+    ]) {
+      expect(find.descendant(of: table, matching: find.byTooltip(tooltip)), findsNWidgets(count), reason: tooltip);
+    }
+    // L'icône agit sans ouvrir la fiche : la boîte de dialogue « Modifier » s'ouvre directement.
+    final edit = find.descendant(of: table, matching: find.byTooltip('Modifier')).first;
+    await tester.ensureVisible(edit);
+    await tester.pumpAndSettle();
+    await tester.tap(edit);
+    await tester.pumpAndSettle();
+    expect(find.text("Modifier l'employé"), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('360 px: cards carry the action icons without overflow', (tester) async {
+    repo = FakeEmployeeRepository([fakeEmployee(1)]);
+    await pumpScreen(tester, 360, height: 740);
+    final card = find.byType(EmployeeCard);
+    for (final tooltip in ['Faire pointer', 'Modifier', 'Désactiver', 'Affecter à un site']) {
+      expect(find.descendant(of: card, matching: find.byTooltip(tooltip)), findsOneWidget, reason: tooltip);
+    }
+    await tester.tap(find.descendant(of: card, matching: find.byTooltip('Désactiver')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Il ne pourra plus pointer.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

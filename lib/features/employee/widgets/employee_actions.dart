@@ -19,10 +19,12 @@ void showActionOutcome(ScaffoldMessengerState messenger, ActionOutcome? outcome)
   ));
 }
 
-/// Les boutons de la fiche : faire pointer, modifier, désactiver ou réactiver, affecter à un site.
+/// Les actions sur un employé : faire pointer, modifier, désactiver ou réactiver, affecter à un site.
+/// [compact] : des icônes seules (ligne du tableau, carte de la liste) au lieu de boutons avec texte (fiche).
 class EmployeeActions extends ConsumerWidget {
-  const EmployeeActions({super.key, required this.employee});
+  const EmployeeActions({super.key, required this.employee, this.compact = false});
   final Employee employee;
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,14 +92,34 @@ class EmployeeActions extends ConsumerWidget {
       );
     }
 
+    final toggleIcon = Icon(employee.isActive ? Icons.person_off_outlined : Icons.person_outline);
+    final toggleLabel = employee.isActive ? 'Désactiver' : 'Réactiver';
+    if (compact) {
+      // Passe à la ligne quand la place manque (carte sur un petit téléphone).
+      return Wrap(children: [
+        if (employee.isActive) PunchForEmployeeButton(employee: employee),
+        IconButton(
+            tooltip: 'Modifier',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: busy ? null : edit),
+        IconButton(
+            tooltip: toggleLabel,
+            visualDensity: VisualDensity.compact,
+            icon: toggleIcon,
+            onPressed: busy ? null : toggleActive),
+        if (employee.isActive)
+          IconButton(
+              tooltip: 'Affecter à un site',
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.place_outlined),
+              onPressed: busy ? null : assign),
+      ]);
+    }
     return Wrap(spacing: 8, runSpacing: 8, children: [
       if (employee.isActive) PunchForEmployeeButton(employee: employee, labeled: true),
       OutlinedButton.icon(onPressed: busy ? null : edit, icon: const Icon(Icons.edit_outlined), label: const Text('Modifier')),
-      OutlinedButton.icon(
-        onPressed: busy ? null : toggleActive,
-        icon: Icon(employee.isActive ? Icons.person_off_outlined : Icons.person_outline),
-        label: Text(employee.isActive ? 'Désactiver' : 'Réactiver'),
-      ),
+      OutlinedButton.icon(onPressed: busy ? null : toggleActive, icon: toggleIcon, label: Text(toggleLabel)),
       if (employee.isActive)
         OutlinedButton.icon(
           onPressed: busy ? null : assign,

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/format.dart';
 import '../employee_model.dart';
 import 'employee_badges.dart';
-import 'punch_for_employee_button.dart';
+import 'employee_actions.dart';
 
 /// Tableau pour les écrans moyens et grands. Défile horizontalement si la place manque.
 class EmployeeTable extends StatelessWidget {
@@ -53,7 +53,7 @@ class EmployeeTable extends StatelessWidget {
                         DataCell(Text(e.phone ?? '—')),
                         DataCell(StatusPill(isActive: e.isActive)),
                         if (showCreatedAt) DataCell(Text(formatDate(e.createdAt))),
-                        DataCell(PunchForEmployeeButton(employee: e)),
+                        DataCell(EmployeeActions(employee: e, compact: true)),
                       ],
                     ),
                 ],
