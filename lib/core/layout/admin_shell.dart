@@ -27,7 +27,9 @@ class AdminShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final size = Breakpoints.of(context);
     final index = ref.watch(adminMenuIndexProvider).clamp(0, menus.length - 1);
-    final identifier = ref.watch(sessionProvider).value?.identifier ?? '';
+    final session = ref.watch(sessionProvider).value;
+    // Le matricule ou l'email, suivi de l'entreprise choisie à la connexion.
+    final identifier = [?session?.identifier, ?session?.companyName].join(' · ');
     void select(int i) => ref.read(adminMenuIndexProvider.notifier).select(i);
     void logout() => ref.read(sessionProvider.notifier).logout();
     final page = _Page(size: size, child: KeyedSubtree(key: ValueKey(index), child: Builder(builder: menus[index].builder)));

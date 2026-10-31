@@ -48,7 +48,7 @@ class PunchScreen extends ConsumerWidget {
             child: Row(children: [
               const Icon(Icons.badge_outlined, size: 20),
               const SizedBox(width: 8),
-              Expanded(child: Text(ref.watch(sessionProvider).value?.identifier ?? '', style: text.titleMedium)),
+              Expanded(child: Text(_sessionLabel(ref.watch(sessionProvider).value), style: text.titleMedium)),
               if (ref.watch(sessionProvider).value?.isResponsible ?? false)
                 IconButton(
                   tooltip: 'Employés',
@@ -149,3 +149,6 @@ class _PunchButton extends StatelessWidget {
     );
   }
 }
+
+/// Le matricule ou l'email, suivi de l'entreprise choisie à la connexion.
+String _sessionLabel(Session? session) => [?session?.identifier, ?session?.companyName].join(' · ');

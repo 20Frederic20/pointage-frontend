@@ -23,6 +23,7 @@ class ApiException implements Exception {
 /// Codes d'erreur du backend (`DomainErrorSchema.code`) traduits pour l'utilisateur.
 const _messages = {
   'INVALID_LOGIN_CODE': 'Code incorrect ou expiré.',
+  'NO_ACTIVE_EMPLOYMENT': 'Aucun accès actif : contactez votre responsable.',
   'INVALID_CREDENTIALS': 'Identifiant ou mot de passe incorrect.',
   'INVALID_REFRESH_TOKEN': 'Session expirée, reconnectez-vous.',
   'INVALID_ACCESS_TOKEN': 'Session expirée, reconnectez-vous.',

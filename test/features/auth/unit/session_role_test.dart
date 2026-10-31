@@ -26,4 +26,17 @@ void main() {
       expect(s.isResponsible, isFalse);
     }
   });
+
+  test('the employee record and the user are read from the JWT', () {
+    final s = sessionWith(jwtWith({'sub': 'u1', 'role': 'HR', 'employee_id': 'emp2'}));
+    expect((s.userId, s.employeeId), ('u1', 'emp2'));
+    expect((sessionWith('tok').userId, sessionWith('tok').employeeId), (null, null));
+  });
+
+  test('the company name survives a save and a reload', () {
+    final s = Session(accessToken: 't', refreshToken: 'r', accessExpiresAt: DateTime(2100), identifier: 'x',
+        companyName: 'Société B');
+    expect(Session.fromJson(s.toJson()).companyName, 'Société B');
+    expect(Session.fromJson({...s.toJson()}..remove('companyName')).companyName, isNull);
+  });
 }
