@@ -16,13 +16,16 @@ class EmployeeCard extends StatelessWidget {
         child: ListTile(
           onTap: onTap,
           leading: const CircleAvatar(child: Icon(Icons.badge_outlined)),
-          title: Text(employee.employeeNumber, overflow: TextOverflow.ellipsis),
+          title: Text(employee.displayName, overflow: TextOverflow.ellipsis),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
               RoleBadge(role: employee.role),
               StatusPill(isActive: employee.isActive),
+              if (employee.displayName != employee.employeeNumber) Text(employee.employeeNumber),
               if (employee.phone case final phone?) Text(phone),
+              if ([?employee.companyName, ?employee.currentSiteName] case final place when place.isNotEmpty)
+                Text(place.join(' · ')),
             ]),
           ),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [

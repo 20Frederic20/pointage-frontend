@@ -146,4 +146,14 @@ void main() {
     expect(find.text('Direction générale (DG)'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('« Actif » is on by default', (tester) async {
+    await pumpAtWidth(tester, 800, Scaffold(body: EmployeeForm(onCreated: (_) {})), overrides: [
+      fakeSession(),
+      employeeRepositoryProvider.overrideWithValue(FakeEmployeeRepository()),
+      directoryRepositoryProvider.overrideWithValue(FakeDirectoryRepository()),
+    ]);
+    final active = tester.widget<SwitchListTile>(find.widgetWithText(SwitchListTile, 'Actif'));
+    expect(active.value, isTrue);
+  });
 }

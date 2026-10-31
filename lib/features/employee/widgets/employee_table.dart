@@ -30,7 +30,9 @@ class EmployeeTable extends StatelessWidget {
               child: DataTable(
                 showCheckboxColumn: false,
                 columns: [
-                  const DataColumn(label: Text('Matricule')),
+                  const DataColumn(label: Text('Employé')),
+                  const DataColumn(label: Text('Entreprise')),
+                  const DataColumn(label: Text('Site')),
                   const DataColumn(label: Text('Rôle')),
                   const DataColumn(label: Text('Téléphone')),
                   const DataColumn(label: Text('Statut')),
@@ -44,7 +46,9 @@ class EmployeeTable extends StatelessWidget {
                       selected: e.id == selectedId,
                       onSelectChanged: (_) => onTap(e),
                       cells: [
-                        DataCell(Text(e.employeeNumber)),
+                        DataCell(_NameCell(employee: e)),
+                        DataCell(Text(e.companyName ?? '—')),
+                        DataCell(Text(e.currentSiteName ?? '—')),
                         DataCell(RoleBadge(role: e.role)),
                         DataCell(Text(e.phone ?? '—')),
                         DataCell(StatusPill(isActive: e.isActive)),
@@ -58,4 +62,19 @@ class EmployeeTable extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// Le nom, et le matricule en dessous quand le compte a un nom.
+class _NameCell extends StatelessWidget {
+  const _NameCell({required this.employee});
+  final Employee employee;
+
+  @override
+  Widget build(BuildContext context) {
+    if (employee.displayName == employee.employeeNumber) return Text(employee.employeeNumber);
+    return Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(employee.displayName),
+      Text(employee.employeeNumber, style: Theme.of(context).textTheme.bodySmall),
+    ]);
+  }
 }

@@ -17,13 +17,15 @@ import 'package:pointage/features/user/user_repository.dart';
 
 /// Session ouverte sans stockage sécurisé ni réseau.
 class FakeSession extends SessionNotifier {
-  /// [role] (valeur du jeton, ex. `HR`) fabrique un jeton JWT portant ce rôle ; sinon [token] tel quel.
-  FakeSession({String? token = 'tok', String? role}) : token = role == null ? token : _tokenWithRole(role);
+  /// [role] (valeur du jeton, ex. `HR`) et/ou [userId] fabriquent un jeton JWT les portant ;
+  /// sinon [token] tel quel.
+  FakeSession({String? token = 'tok', String? role, String? userId})
+      : token = role == null && userId == null ? token : _jwt(role: role, userId: userId);
   final String? token;
 
-  static String _tokenWithRole(String role) {
+  static String _jwt({String? role, String? userId}) {
     String b64(Object o) => base64Url.encode(utf8.encode(jsonEncode(o))).replaceAll('=', '');
-    return '${b64({'alg': 'none'})}.${b64({'role': role})}.sig';
+    return '${b64({'alg': 'none'})}.${b64({'role': ?role, 'sub': ?userId})}.sig';
   }
 
   @override
@@ -41,8 +43,8 @@ class FakeSession extends SessionNotifier {
   Future<void> logout() async => state = const AsyncData(null);
 }
 
-Override fakeSession({String? token = 'tok', String? role}) =>
-    sessionProvider.overrideWith(() => FakeSession(token: token, role: role));
+Override fakeSession({String? token = 'tok', String? role, String? userId}) =>
+    sessionProvider.overrideWith(() => FakeSession(token: token, role: role, userId: userId));
 
 Employee fakeEmployee(int n, {Role role = Role.employee, bool isActive = true}) => Employee(
       id: 'emp$n',

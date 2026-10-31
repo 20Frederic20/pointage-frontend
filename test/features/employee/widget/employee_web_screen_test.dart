@@ -123,6 +123,9 @@ void main() {
     await pumpScreen(tester, 1440);
     expect(find.text('Actions'), findsOneWidget);
     expect(find.byTooltip('Faire pointer'), findsOneWidget);
+    // Le tableau défile horizontalement : la colonne Actions est au bout.
+    await tester.ensureVisible(find.byTooltip('Faire pointer'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Faire pointer'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Faire pointer'));

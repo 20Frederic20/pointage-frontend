@@ -4,6 +4,11 @@ import '../../../core/theme.dart';
 import '../employee_model.dart';
 import '../widgets/employee_form.dart';
 
+/// Message après la création ; l'email avait peut-être déjà un compte (autre entreprise).
+String createdMessage(Employee created) => created.accountReused
+    ? 'Ce compte existait déjà : une nouvelle fiche a été créée dans cette entreprise.'
+    : 'Employé ${created.employeeNumber} créé';
+
 /// Ouvre la création : dialogue (écrans moyens et grands) ou page plein écran (téléphone).
 Future<void> openEmployeeCreate(BuildContext context, {required bool asDialog}) async {
   final messenger = ScaffoldMessenger.of(context);
@@ -20,7 +25,7 @@ Future<void> openEmployeeCreate(BuildContext context, {required bool asDialog}) 
       : await Navigator.of(context).push<Employee>(MaterialPageRoute(builder: (_) => const EmployeeCreatePage()));
   if (created != null) {
     messenger.showSnackBar(
-      SnackBar(backgroundColor: AppColors.green, content: Text('Employé ${created.employeeNumber} créé')),
+      SnackBar(backgroundColor: AppColors.green, content: Text(createdMessage(created))),
     );
   }
 }

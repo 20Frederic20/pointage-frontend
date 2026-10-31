@@ -33,7 +33,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
   String? _directoryId;
   String? _siteId;
   Role _role = Role.employee;
-  bool _isActive = false;
+  bool _isActive = true;
   DateTime? _startDate;
 
   /// Erreur locale : une liste de choix n'a pas pu se charger.
