@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../core/api_client.dart';
+import '../../core/role.dart';
 import 'auth_repository.dart';
 
 class Session {
@@ -12,6 +13,7 @@ class Session {
     required this.refreshToken,
     required this.accessExpiresAt,
     required this.identifier,
+    this.companyName,
   });
 
   final String accessToken;
@@ -21,11 +23,44 @@ class Session {
   /// Matricule ou email saisi à la connexion, affiché en haut de l'écran.
   final String identifier;
 
-  factory Session.from(TokenPair t, String identifier) => Session(
+  /// Entreprise choisie à la connexion (null : une seule, ou pas encore connue).
+  final String? companyName;
+
+  /// Rôle lu dans le jeton d'accès (charge utile base64url, sans vérifier la signature :
+  /// le serveur reste seul juge). Illisible : on retombe sur le rôle le plus bas.
+  Role get role {
+    try {
+      return Role.fromWire(_claims['role'] as String);
+    } catch (_) {
+      return Role.employee;
+    }
+  }
+
+  /// Compte connecté (`sub` du jeton) ; null si illisible.
+  String? get userId => _claims['sub'] as String?;
+
+  /// Fiche employé de la session (une par entreprise) ; null pour un ancien jeton.
+  String? get employeeId => _claims['employee_id'] as String?;
+
+  Map<String, dynamic> get _claims {
+    try {
+      final parts = accessToken.split('.');
+      if (parts.length != 3) return const {};
+      final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+      return payload is Map<String, dynamic> ? payload : const {};
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  bool get isResponsible => role != Role.employee;
+
+  factory Session.from(TokenPair t, String identifier, {String? companyName}) => Session(
         accessToken: t.accessToken,
         refreshToken: t.refreshToken,
         accessExpiresAt: DateTime.now().add(Duration(seconds: t.expiresIn)),
         identifier: identifier,
+        companyName: companyName,
       );
 
   Map<String, dynamic> toJson() => {
@@ -33,6 +68,7 @@ class Session {
         'refreshToken': refreshToken,
         'accessExpiresAt': accessExpiresAt.toIso8601String(),
         'identifier': identifier,
+        if (companyName != null) 'companyName': companyName,
       };
 
   factory Session.fromJson(Map<String, dynamic> j) => Session(
@@ -40,6 +76,7 @@ class Session {
         refreshToken: j['refreshToken'] as String,
         accessExpiresAt: DateTime.parse(j['accessExpiresAt'] as String),
         identifier: j['identifier'] as String,
+        companyName: j['companyName'] as String?,
       );
 }
 
@@ -62,8 +99,8 @@ class SessionNotifier extends AsyncNotifier<Session?> {
     return _refresh(Session.fromJson(jsonDecode(raw) as Map<String, dynamic>));
   }
 
-  Future<void> signIn(TokenPair tokens, String identifier) async {
-    final session = Session.from(tokens, identifier);
+  Future<void> signIn(TokenPair tokens, String identifier, {String? companyName}) async {
+    final session = Session.from(tokens, identifier, companyName: companyName);
     await _save(session);
     state = AsyncData(session);
   }
@@ -96,7 +133,7 @@ class SessionNotifier extends AsyncNotifier<Session?> {
   Future<Session?> _refresh(Session session) async {
     try {
       final tokens = await ref.read(authRepositoryProvider).refresh(session.refreshToken);
-      final next = Session.from(tokens, session.identifier);
+      final next = Session.from(tokens, session.identifier, companyName: session.companyName);
       await _save(next);
       return next;
     } on ApiException catch (e) {
@@ -114,3 +151,11 @@ class SessionNotifier extends AsyncNotifier<Session?> {
 }
 
 final sessionProvider = AsyncNotifierProvider<SessionNotifier, Session?>(SessionNotifier.new);
+
+/// Jeton valide pour un appel API ; lève une [ApiException] 401 quand la session est terminée
+/// (main.dart renvoie alors vers la connexion).
+Future<String> requireAccessToken(Ref ref) async {
+  final token = await ref.read(sessionProvider.notifier).accessToken();
+  if (token == null) throw ApiException('Session expirée, reconnectez-vous.', status: 401);
+  return token;
+}

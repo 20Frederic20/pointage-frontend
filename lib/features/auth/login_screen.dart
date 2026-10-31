@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api_client.dart';
 import '../../core/theme.dart';
 import 'auth_repository.dart';
+import 'company_choice_screen.dart';
 import 'session_provider.dart';
 
 /// Connexion : matricule OU email, puis code reçu par email (6 chiffres).
@@ -63,10 +64,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _signIn() => _run(() async {
         final repo = ref.read(authRepositoryProvider);
-        final tokens = _usePassword
-            ? await repo.loginWithPassword(_identifierValue, _secret.text)
-            : await repo.verifyCode(_identifierValue, _secret.text.trim());
-        await ref.read(sessionProvider.notifier).signIn(tokens, _identifierValue);
+        final identifier = _identifierValue;
+        final result = _usePassword
+            ? await repo.loginWithPassword(identifier, _secret.text)
+            : await repo.verifyCode(identifier, _secret.text.trim());
+        switch (result) {
+          case LoginAuthenticated(:final tokens):
+            await ref.read(sessionProvider.notifier).signIn(tokens, identifier);
+          case LoginSelectionRequired(:final selectionToken, :final employments):
+            if (!mounted) return;
+            final session = ref.read(sessionProvider.notifier);
+            await Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (routeContext) => CompanyChoiceScreen(
+                employments: employments,
+                onChoose: (e) async {
+                  final tokens = await repo.selectEmployee(selectionToken, e.employeeId);
+                  await session.signIn(tokens, identifier, companyName: e.companyName);
+                  if (routeContext.mounted) Navigator.of(routeContext).popUntil((route) => route.isFirst);
+                },
+              ),
+            ));
+        }
       });
 
   void _toggleMode() => setState(() {

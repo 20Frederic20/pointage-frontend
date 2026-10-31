@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Votre position est vérifiée au moment du pointage.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Le selfie confirme l'identité de la personne qui pointe.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
