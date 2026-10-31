@@ -27,4 +27,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(chosen?.employeeId, 'emp2');
   });
+
+  for (final width in responsiveWidths) {
+    testWidgets('$width px: long company names fit', (tester) async {
+      await pumpAtWidth(
+        tester,
+        width,
+        CompanyChoiceScreen(
+          employments: [
+            Employment(
+                employeeId: 'emp1',
+                companyName: 'Société Béninoise de Distribution et de Services Logistiques du Littoral',
+                role: Role.payroll),
+          ],
+          onChoose: (_) async {},
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

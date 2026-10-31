@@ -75,6 +75,7 @@ class _EditEmployeeDialogState extends State<EditEmployeeDialog> {
             DropdownButtonFormField<Role>(
               key: const ValueKey('edit-role'),
               initialValue: _role,
+              isExpanded: true,
               decoration: InputDecoration(
                 labelText: 'Rôle',
                 helperText: widget.ownRecord ? 'Vous ne pouvez pas modifier votre propre rôle.' : null,

@@ -160,4 +160,33 @@ void main() {
     expect((repo.actions.single.$1, repo.actions.single.$2), ('end', 'asg1'));
     expect(find.text('Affectation terminée.'), findsOneWidget);
   });
+
+  for (final width in responsiveWidths) {
+    testWidgets('$width px: the detail, its actions and its dialogs fit (mobile and web)', (tester) async {
+      repo = FakeEmployeeRepository([placed(3)])
+        ..assignmentList = [
+          Assignment(id: 'asg1', directoryId: 'dir1', directoryName: 'Direction générale', siteId: 'sit1',
+              siteName: 'Siège Cotonou', startDate: DateTime(2026, 1, 1)),
+        ];
+      await pumpAtWidth(
+        tester,
+        width,
+        const Scaffold(body: EmployeeDetailView(id: 'emp3')),
+        height: 800,
+        overrides: [
+          fakeSession(role: 'HR', userId: 'usr99'),
+          employeeRepositoryProvider.overrideWithValue(repo),
+          directoryRepositoryProvider.overrideWithValue(FakeDirectoryRepository()),
+        ],
+      );
+      for (final action in ['Modifier', 'Désactiver', 'Affecter à un site']) {
+        await tester.tap(find.text(action));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget, reason: action);
+        await tester.tap(find.text('Annuler').last);
+        await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

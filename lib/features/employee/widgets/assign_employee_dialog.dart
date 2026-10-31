@@ -65,10 +65,11 @@ class _AssignEmployeeDialogState extends ConsumerState<AssignEmployeeDialog> {
           DropdownButtonFormField<String>(
             key: ValueKey('assign-directory-$_directoryId'),
             initialValue: _directoryId,
+            isExpanded: true, // un nom long ne déborde pas sur téléphone
             decoration: const InputDecoration(labelText: 'Service'),
             items: [
               for (final d in companyDirectories(directories.value ?? const [], widget.employee.companyDirectoryId))
-                DropdownMenuItem(value: d.id, child: Text(d.name)),
+                DropdownMenuItem(value: d.id, child: Text(d.name, overflow: TextOverflow.ellipsis)),
             ],
             onChanged: (v) => setState(() {
               _directoryId = v;
@@ -78,8 +79,12 @@ class _AssignEmployeeDialogState extends ConsumerState<AssignEmployeeDialog> {
           DropdownButtonFormField<String>(
             key: ValueKey('assign-site-$_directoryId'),
             initialValue: siteId,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'Site'),
-            items: [for (final s in siteItems) DropdownMenuItem(value: s.id, child: Text(s.name))],
+            items: [
+              for (final s in siteItems)
+                DropdownMenuItem(value: s.id, child: Text(s.name, overflow: TextOverflow.ellipsis)),
+            ],
             onChanged: (v) => setState(() => _siteId = v),
           ),
           ListTile(
