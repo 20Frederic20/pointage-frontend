@@ -13,13 +13,17 @@ import '../widgets/time_entries_table.dart' show StatusChip;
 
 const _days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
-/// Pointages et totaux de l'employé connecté : sans filtre, le backend s'en tient à sa fiche.
+/// Pointages et totaux de la fiche de la session. Toujours filtré sur elle : un responsable verrait
+/// sinon toute l'entreprise. Sans fiche (compte administrateur seul), il n'y a rien à montrer.
 final myTimeEntriesProvider =
     FutureProvider.autoDispose.family<(List<TimeEntryRow>, WorkTimeSummaryRow?), Period>((ref, period) async {
+  final employeeId = (await ref.watch(sessionProvider.future))?.employeeId;
+  if (employeeId == null) return (const <TimeEntryRow>[], null);
   final token = await requireAccessToken(ref);
   final repo = ref.read(workTimeRepositoryProvider);
-  final entries = repo.entries(token, period: period, limit: 500);
-  final report = repo.report(token, period: period);
+  final filters = WorkTimeFilters(employeeId: employeeId);
+  final entries = repo.entries(token, period: period, filters: filters, limit: 500);
+  final report = repo.report(token, period: period, filters: filters);
   await Future.wait([entries, report]); // lève la première erreur telle quelle
   return ((await entries).items, (await report).summary.firstOrNull);
 }, retry: (_, _) => null);

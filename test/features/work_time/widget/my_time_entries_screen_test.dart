@@ -24,14 +24,17 @@ void main() {
         report: WorkTimeReport(summary: [fakeSummary(1)], days: const []),
       ));
 
-  List<Override> overrides() => [fakeSession(role: 'EMPLOYEE'), workTimeRepositoryProvider.overrideWithValue(repo)];
+  List<Override> overrides({String role = 'EMPLOYEE', String? employeeId = 'emp1'}) => [
+        fakeSession(role: role, employeeId: employeeId),
+        workTimeRepositoryProvider.overrideWithValue(repo),
+      ];
 
   testWidgets('the totals come from the API and the entries are grouped by day', (tester) async {
     await pumpAtWidth(tester, 360, const MyTimeEntriesScreen(), height: 740, overrides: overrides());
     expect(find.text("Aujourd'hui"), findsOneWidget);
     expect(repo.entryCalls.single.period, Period.today());
-    expect(repo.entryCalls.single.filters.query, isEmpty); // le backend restreint à la fiche de la session
-    expect(repo.reportCalls.single.filters.query, isEmpty);
+    expect(repo.entryCalls.single.filters.query, {'employee_id': 'emp1'});
+    expect(repo.reportCalls.single.filters.query, {'employee_id': 'emp1'});
     for (final label in ['Heures travaillées', 'Jours présents', 'Retards', 'Heures supp.']) {
       expect(find.text(label), findsOneWidget);
     }
@@ -62,6 +65,21 @@ void main() {
     await tester.tap(find.text('Réessayer'));
     await tester.pumpAndSettle();
     expect(find.text('25:30'), findsOneWidget);
+  });
+
+  testWidgets('a manager sees only their own record, not the whole company', (tester) async {
+    await pumpAtWidth(tester, 360, const MyTimeEntriesScreen(), height: 740,
+        overrides: overrides(role: 'MANAGER', employeeId: 'emp7'));
+    expect(repo.entryCalls.single.filters.employeeId, 'emp7');
+    expect(repo.reportCalls.single.filters.employeeId, 'emp7');
+  });
+
+  testWidgets('a session without an employee record shows nothing and calls nothing', (tester) async {
+    await pumpAtWidth(tester, 360, const MyTimeEntriesScreen(), height: 740,
+        overrides: overrides(role: 'ADMIN', employeeId: null));
+    expect(repo.entryCalls, isEmpty);
+    expect(repo.reportCalls, isEmpty);
+    expect(find.text('Aucun pointage sur la période'), findsOneWidget);
   });
 
   testWidgets('PunchScreen shows « Mes pointages » to an employee and opens it', (tester) async {
