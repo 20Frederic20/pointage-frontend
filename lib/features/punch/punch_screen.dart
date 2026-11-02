@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../auth/session_provider.dart';
 import '../employee/screens/employee_mobile_screen.dart';
+import '../work_time/screens/my_time_entries_screen.dart';
 import 'assisted_punch_screen.dart';
 import 'punch_controller.dart';
 import 'punch_repository.dart';
@@ -56,6 +57,12 @@ class PunchScreen extends ConsumerWidget {
                   onPressed: () =>
                       Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const EmployeeMobileScreen())),
                 ),
+              IconButton(
+                tooltip: 'Mes pointages',
+                icon: const Icon(Icons.history),
+                onPressed: () =>
+                    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const MyTimeEntriesScreen())),
+              ),
               IconButton(
                 tooltip: 'Se déconnecter',
                 icon: const Icon(Icons.logout),
