@@ -56,6 +56,9 @@ const _messages = {
   'SELF_DECISION': 'Vous ne pouvez pas traiter une anomalie qui vous concerne.',
   'NOT_FOUND': 'Élément introuvable.',
   'CONFLICT': 'Conflit : cet élément existe déjà ou a été modifié entre-temps.',
+  'INVALID_PERIOD': 'La période est invalide.',
+  'PERIOD_TOO_LONG': 'La période ne peut pas dépasser 62 jours.',
+  'TOO_MANY_CALCULATIONS': "Trop de calculs demandés : réduisez la période ou le nombre d'employés.",
 };
 
 /// Message par statut HTTP quand le code d'erreur n'est pas connu :
@@ -76,10 +79,14 @@ class ApiClient {
 
   static const _timeout = Duration(seconds: 15);
 
-  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body, {String? accessToken}) async {
+  /// Pour les traitements longs : exports, recalculs.
+  static const longTimeout = Duration(seconds: 60);
+
+  Future<Map<String, dynamic>> post(String path, Map<String, dynamic> body,
+      {String? accessToken, Duration timeout = _timeout}) async {
     final res = await _http
         .post(_uri(path), headers: _headers(accessToken), body: jsonEncode(body))
-        .timeout(_timeout);
+        .timeout(timeout);
     return _handle(res) as Map<String, dynamic>;
   }
 
@@ -115,8 +122,11 @@ class ApiClient {
   }
 
   /// Corps brut d'une réponse (image, par exemple) ; mêmes erreurs que [get].
-  Future<Uint8List> getBytes(String path, {String? accessToken}) async {
-    final res = await _http.get(_uri(path), headers: {if (accessToken != null) 'Authorization': 'Bearer $accessToken'}).timeout(_timeout);
+  Future<Uint8List> getBytes(String path,
+      {String? accessToken, Map<String, String>? query, Duration timeout = _timeout}) async {
+    final res = await _http
+        .get(_uri(path, query), headers: {if (accessToken != null) 'Authorization': 'Bearer $accessToken'})
+        .timeout(timeout);
     if (res.statusCode < 400) return res.bodyBytes;
     _handle(res); // lève l'erreur traduite
     throw ApiException(_fallback(res.statusCode), status: res.statusCode);
