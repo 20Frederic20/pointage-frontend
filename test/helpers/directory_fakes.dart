@@ -14,7 +14,7 @@ class FakeDirectoryAdminRepository implements DirectoryRepository {
         sitesByDirectory = {
           'a': [
             const Site(id: 's1', name: 'Siège A', directoryId: 'a', latitude: 6.36, longitude: 2.41, isPrincipal: true),
-            const Site(id: 's2', name: 'Annexe A', directoryId: 'a', latitude: 6.37, longitude: 2.42),
+            const Site(id: 's2', name: 'Annexe A', directoryId: 'a', latitude: 6.37, longitude: 2.42, address: 'Rue 12'),
           ],
           'n': [const Site(id: 's3', name: 'Agence Nord', directoryId: 'n', latitude: 6.5, longitude: 2.6, isPrincipal: true)],
         };
@@ -23,6 +23,7 @@ class FakeDirectoryAdminRepository implements DirectoryRepository {
   final Map<String, List<Site>> sitesByDirectory;
   final List<String> calls = [];
   final List<Map<String, Object?>> createdSites = [];
+  final List<Map<String, Object?>> updatedSites = [];
   int _n = 0;
 
   @override
@@ -68,8 +69,23 @@ class FakeDirectoryAdminRepository implements DirectoryRepository {
 
   @override
   Future<Site> updateSite(String accessToken, String id, {String? name, String? address, double? latitude, double? longitude}) async {
-    calls.add('updateSite $id');
-    throw UnimplementedError();
+    updatedSites.add({'id': id, 'name': name, 'address': address, 'latitude': latitude, 'longitude': longitude});
+    for (final list in sitesByDirectory.values) {
+      final i = list.indexWhere((s) => s.id == id);
+      if (i < 0) continue;
+      final old = list[i];
+      return list[i] = Site(
+        id: id,
+        name: name ?? old.name,
+        directoryId: old.directoryId,
+        latitude: latitude ?? old.latitude,
+        longitude: longitude ?? old.longitude,
+        address: address == null ? old.address : (address.isEmpty ? null : address),
+        isPrincipal: old.isPrincipal,
+        active: old.active,
+      );
+    }
+    throw ApiException('Élément introuvable.', status: 404);
   }
 
   @override

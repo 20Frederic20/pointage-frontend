@@ -150,8 +150,9 @@ class SiteDetailPanel extends ConsumerWidget {
           onPressed: () async {
             final r = await showSiteFormDialog(context, title: 'Modifier le site', site: site);
             if (r != null && context.mounted) {
+              // Adresse vidée : '' l'efface (null la laisserait inchangée).
               await _report(context, () => controller.updateSite(site.id,
-                  name: r.name, latitude: r.latitude, longitude: r.longitude, address: r.address));
+                  name: r.name, latitude: r.latitude, longitude: r.longitude, address: r.address ?? ''));
             }
           },
           child: const Text('Modifier'),

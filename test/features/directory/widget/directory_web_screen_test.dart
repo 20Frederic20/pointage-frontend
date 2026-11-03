@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pointage/features/directory/directory_admin_controller.dart';
 import 'package:pointage/features/directory/directory_repository.dart';
 import 'package:pointage/features/directory/screens/directory_web_screen.dart';
 import 'package:pointage/features/directory/widgets/site_map.dart';
@@ -94,6 +96,34 @@ void main() {
     expect((created['directoryId'], created['name']), ('b', 'Siège B'));
     expect(created['latitude'] as double, closeTo(6.3654, 0.05)); // centre par défaut : Cotonou
     expect(created['longitude'] as double, closeTo(2.4183, 0.05));
+  });
+
+  testWidgets('emptying the address of a site clears it', (tester) async {
+    await pumpScreen(tester, 1440);
+    await select(tester, 'Annexe A');
+    expect(find.text('Rue 12'), findsOneWidget);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Modifier'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Adresse (facultative)'), '');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Enregistrer'));
+    await tester.pumpAndSettle();
+    expect(repo.updatedSites.single['address'], '');
+    expect(find.text('Rue 12'), findsNothing);
+  });
+
+  testWidgets('the detail map follows a site moved far away', (tester) async {
+    await pumpScreen(tester, 1440);
+    await select(tester, 'Annexe A');
+    final detailPins = find.descendant(of: find.byType(SiteMap), matching: find.byIcon(Icons.location_on));
+    expect(detailPins, findsOneWidget);
+    // Déplacé à ~100 km (Abomey) sans passer par la carte du formulaire.
+    await repo.updateSite('tok', 's2', latitude: 7.18, longitude: 1.99);
+    await tester.runAsync(() => ProviderScope.containerOf(tester.element(find.byType(DirectoryWebScreen)))
+        .read(directoryAdminControllerProvider.notifier)
+        .reload());
+    await tester.pumpAndSettle();
+    expect(detailPins, findsOneWidget); // le marqueur reste dans le cadre
   });
 
   for (final width in responsiveWidths) {

@@ -52,6 +52,8 @@ class SiteMap extends ConsumerWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: FlutterMap(
+          // La caméra ne suit pas un nouveau centre : on la recrée quand les sites bougent.
+          key: ValueKey((center.latitude, center.longitude, placed.length)),
           options: MapOptions(initialCenter: center, initialZoom: placed.length == 1 ? 15 : 12),
           children: [
             ?tiles,
