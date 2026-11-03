@@ -128,7 +128,7 @@ class AnomalyController extends Notifier<AnomalyState> {
           .list(token, status: status, limit: AnomalyState.limit, offset: offset);
       if (!_isCurrent(generation)) return;
       if (page.items.isEmpty && offset > 0 && page.total > 0) {
-        return _fetch((page.total - 1) ~/ AnomalyState.limit * AnomalyState.limit);
+        return await _fetch((page.total - 1) ~/ AnomalyState.limit * AnomalyState.limit);
       }
       final (items, removed) = _overlay(page.items, status);
       state = state.copyWith(items: items, total: page.total - removed, offset: offset, loading: false);

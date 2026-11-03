@@ -45,6 +45,12 @@ dependencies:
   flutter_map: ^8.3.2
   latlong2: ^0.10.1
 
+  # Back-office : composants du template Kite (MIT, ColorlibHQ), copiés dans
+  # packages/kite_ui pour rester modifiables, et le routage par URL.
+  kite_ui:
+    path: packages/kite_ui
+  go_router: ^18.1.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

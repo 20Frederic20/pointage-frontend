@@ -116,7 +116,7 @@ class EmployeeController extends Notifier<EmployeeState> {
       if (!_isCurrent(generation)) return;
       // La page demandée n'existe plus (le total a baissé) : on revient à la dernière.
       if (page.items.isEmpty && offset > 0 && page.total > 0) {
-        return _fetch((page.total - 1) ~/ EmployeeState.limit * EmployeeState.limit);
+        return await _fetch((page.total - 1) ~/ EmployeeState.limit * EmployeeState.limit);
       }
       state = state.copyWith(items: page.items, total: page.total, offset: offset, loading: false);
     } catch (e) {
