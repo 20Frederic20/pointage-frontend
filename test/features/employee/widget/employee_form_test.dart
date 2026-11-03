@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pointage/features/directory/directory_model.dart';
 import 'package:pointage/core/api_client.dart';
 import 'package:pointage/features/directory/directory_repository.dart';
 import 'package:pointage/features/employee/employee_model.dart';
@@ -145,6 +146,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Direction générale (DG)'), findsWidgets);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('blocked directories and inactive sites are not offered', (tester) async {
+    final directories = FakeDirectoryRepository(
+      directories: [direction, const Directory(id: 'dir9', name: 'Agence fermée', code: 'AF', active: false)],
+      sitesByDirectory: {'dir1': [siege, const Site(id: 'sit9', name: 'Annexe fermée', active: false)]},
+    );
+    await pumpForm(tester, directories: directories);
+    await tester.tap(find.widgetWithText(InputDecorator, 'Annuaire'));
+    await tester.pumpAndSettle();
+    expect(find.text('Agence fermée (AF)'), findsNothing);
+    await tester.tap(find.text('Direction générale (DG)').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(InputDecorator, 'Site (facultatif)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Siège Cotonou'), findsWidgets);
+    expect(find.text('Annexe fermée'), findsNothing);
   });
 
   testWidgets('« Actif » is on by default', (tester) async {

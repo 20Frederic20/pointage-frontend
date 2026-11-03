@@ -51,3 +51,20 @@ DirectoryNode? findNode(List<DirectoryNode> nodes, String directoryId) {
   }
   return null;
 }
+
+/// Annuaires où l'on peut encore affecter : ni désactivés, ni sous un annuaire désactivé (ordre d'origine).
+List<Directory> assignableDirectories(List<Directory> all) {
+  final blocked = <String>{};
+  void walk(List<DirectoryNode> nodes) {
+    for (final node in nodes) {
+      if (node.blocked) blocked.add(node.directory.id);
+      walk(node.children);
+    }
+  }
+
+  walk(buildDirectoryTree(all, const {}));
+  return [for (final d in all) if (!blocked.contains(d.id)) d];
+}
+
+/// Sites où l'on peut encore affecter : les sites actifs.
+List<Site> assignableSites(List<Site> sites) => [for (final s in sites) if (s.active) s];

@@ -5,6 +5,7 @@ import '../../../core/format.dart';
 import '../../../core/role.dart';
 import '../../../core/theme.dart';
 import '../../directory/directory_controller.dart';
+import '../../directory/directory_tree.dart';
 import '../employee_controller.dart';
 import '../employee_model.dart';
 
@@ -148,7 +149,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
             label: 'Annuaire',
             options: ref
                 .watch(allDirectoriesProvider)
-                .whenData((directories) => {for (final d in directories) d.id: '${d.name} (${d.code})'}),
+                .whenData((directories) => {for (final d in assignableDirectories(directories)) d.id: '${d.name} (${d.code})'}),
             value: _directoryId,
             onRetry: () => ref.invalidate(allDirectoriesProvider),
             onChanged: (v) => setState(() {
@@ -169,7 +170,7 @@ class _EmployeeFormState extends ConsumerState<EmployeeForm> {
               emptyLabel: 'Site principal',
               options: ref
                   .watch(directorySitesProvider(directoryId))
-                  .whenData((sites) => {for (final s in sites) s.id: s.name}),
+                  .whenData((sites) => {for (final s in assignableSites(sites)) s.id: s.name}),
               value: _siteId,
               onRetry: () => ref.invalidate(directorySitesProvider(directoryId)),
               onChanged: (v) => setState(() => _siteId = v),

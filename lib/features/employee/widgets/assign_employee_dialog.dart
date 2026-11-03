@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format.dart';
 import '../../directory/directory_controller.dart';
+import '../../directory/directory_tree.dart';
 import '../../directory/directory_model.dart';
 import '../employee_model.dart';
 
@@ -54,7 +55,7 @@ class _AssignEmployeeDialogState extends ConsumerState<AssignEmployeeDialog> {
   Widget build(BuildContext context) {
     final directories = ref.watch(allDirectoriesProvider);
     final sites = _directoryId == null ? null : ref.watch(directorySitesProvider(_directoryId!));
-    final siteItems = sites?.value ?? const <Site>[];
+    final siteItems = assignableSites(sites?.value ?? const <Site>[]);
     // Le site principal (premier de la liste) par défaut.
     final siteId = _siteId ?? (siteItems.isEmpty ? null : siteItems.first.id);
     final current = widget.employee.currentSiteName;
@@ -68,7 +69,8 @@ class _AssignEmployeeDialogState extends ConsumerState<AssignEmployeeDialog> {
             isExpanded: true, // un nom long ne déborde pas sur téléphone
             decoration: const InputDecoration(labelText: 'Service'),
             items: [
-              for (final d in companyDirectories(directories.value ?? const [], widget.employee.companyDirectoryId))
+              for (final d in companyDirectories(
+                  assignableDirectories(directories.value ?? const []), widget.employee.companyDirectoryId))
                 DropdownMenuItem(value: d.id, child: Text(d.name, overflow: TextOverflow.ellipsis)),
             ],
             onChanged: (v) => setState(() {

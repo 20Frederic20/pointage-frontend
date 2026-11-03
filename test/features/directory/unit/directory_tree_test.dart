@@ -51,4 +51,14 @@ void main() {
     expect(findNode(tree, 'g')?.directory.name, 'Guichet');
     expect(findNode(tree, 'nope'), isNull);
   });
+
+  test('assignableDirectories drops a deactivated directory and everything under it', () {
+    final all = [_companyA.copyWith(active: false), _nord, _guichet, _companyB, _est.copyWith(active: false)];
+    expect(assignableDirectories(all).map((d) => d.id), ['b']);
+    expect(assignableDirectories([_companyA, _nord, _guichet]).map((d) => d.id), ['a', 'n', 'g']);
+  });
+
+  test('assignableSites keeps the active sites only', () {
+    expect(assignableSites([_siege, _annexe.copyWith(active: false)]).map((s) => s.id), ['s1']);
+  });
 }
