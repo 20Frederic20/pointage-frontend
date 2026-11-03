@@ -4,9 +4,9 @@ import '../auth/session_provider.dart';
 import 'directory_model.dart';
 import 'directory_repository.dart';
 
-/// Annuaires proposés dans le formulaire de création d'employé (les 100 premiers).
+/// Tous les annuaires (formulaires, filtres, écran « Annuaires »).
 final allDirectoriesProvider = FutureProvider.autoDispose<List<Directory>>(
-  (ref) async => (await ref.read(directoryRepositoryProvider).list(await requireAccessToken(ref))).items,
+  (ref) async => ref.read(directoryRepositoryProvider).all(await requireAccessToken(ref)),
   retry: (_, _) => null,
 );
 

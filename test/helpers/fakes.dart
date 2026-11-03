@@ -242,4 +242,13 @@ class FakeDirectoryRepository implements DirectoryRepository {
 
   @override
   Future<List<Site>> sites(String accessToken, String directoryId) async => sitesByDirectory[directoryId] ?? const [];
+
+  @override
+  Future<List<Directory>> all(String accessToken) async {
+    if (error case final e?) throw e;
+    return directories;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('${invocation.memberName}');
 }

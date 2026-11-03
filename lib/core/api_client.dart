@@ -58,6 +58,10 @@ const _messages = {
   'CONFLICT': 'Conflit : cet élément existe déjà ou a été modifié entre-temps.',
   'INVALID_PERIOD': 'La période est invalide.',
   'PERIOD_TOO_LONG': 'La période ne peut pas dépasser 62 jours.',
+  'DIRECTORY_INACTIVE': 'Cet annuaire est désactivé.',
+  'DIRECTORY_ALREADY_EXISTS': "Ce code d'annuaire est déjà utilisé.",
+  'PRINCIPAL_SITE_CANNOT_BE_DEACTIVATED':
+      "Le site principal ne peut pas être désactivé : rendez d'abord un autre site principal.",
   'TOO_MANY_CALCULATIONS': "Trop de calculs demandés : réduisez la période ou le nombre d'employés.",
 };
 
