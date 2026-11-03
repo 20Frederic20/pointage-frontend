@@ -43,7 +43,11 @@ class EmployeeToolbar extends StatelessWidget {
         onChanged: (a) => onChanged(EmployeeFilters(search: filters.search, role: filters.role, isActive: a)),
       ),
       if (compact)
-        IconButton.filled(tooltip: 'Nouvel employé', icon: const Icon(Icons.add), onPressed: onCreate)
+        // Couleur explicite : le thème du back-office impose une couleur d'icône qui l'emporterait sur celle du bouton.
+        IconButton.filled(
+            tooltip: 'Nouvel employé',
+            icon: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
+            onPressed: onCreate)
       else
         FilledButton.icon(onPressed: onCreate, icon: const Icon(Icons.add), label: const Text('Nouvel employé')),
     ]);

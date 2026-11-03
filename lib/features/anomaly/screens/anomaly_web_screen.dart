@@ -58,10 +58,7 @@ class _AnomalyWebScreenState extends ConsumerState<AnomalyWebScreen> {
     final window = Breakpoints.of(context);
 
     final list = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      if (window != WindowSize.compact) ...[
-        Text('Anomalies', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
-      ],
+      // Le titre est dans la barre du haut de la coquille.
       Wrap(spacing: 8, runSpacing: 8, children: [
         for (final entry in _statusFilters.entries)
           ChoiceChip(

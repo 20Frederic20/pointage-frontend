@@ -30,6 +30,8 @@ final adminRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AdminPaths.dashboard,
     refreshListenable: refresh,
     redirect: (context, state) {
+      // Session pas encore chargée : on garde l'adresse demandée (lien direct, F5) jusqu'au rafraîchissement.
+      if (ref.read(sessionProvider) case AsyncLoading(hasValue: false)) return null;
       final session = ref.read(sessionProvider).value;
       final atSignIn = state.matchedLocation == AdminPaths.signIn;
       if (session == null) return atSignIn ? null : AdminPaths.signIn;
@@ -89,19 +91,21 @@ class AdminApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Premier chargement de la session (stockage sécurisé, rafraîchissement) : rien à router encore.
-    if (ref.watch(sessionProvider) case AsyncLoading(hasValue: false)) {
-      return ShadApp(
-        theme: adminTheme,
-        debugShowCheckedModeBanner: false,
-        home: const Scaffold(body: Center(child: CircularProgressIndicator())),
-      );
-    }
+    // Premier chargement de la session (stockage sécurisé, rafraîchissement) : rien à afficher encore.
+    // Une seule application routeur, pour ne pas réécrire l'adresse du navigateur pendant l'attente.
+    final session = ref.watch(sessionProvider);
+    final loading = session.isLoading && !session.hasValue;
     return ShadApp.router(
+      builder: (context, child) =>
+          loading ? const Scaffold(body: Center(child: CircularProgressIndicator())) : child!,
       title: 'Pointage — Administration',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.light,
       theme: adminTheme,
+      // Tableaux plus serrés, comme ceux de Kite : les colonnes tiennent à 1440 px sans défiler.
+      materialThemeBuilder: (_, theme) => theme.copyWith(
+        dataTableTheme: theme.dataTableTheme.copyWith(columnSpacing: 24, horizontalMargin: 16),
+      ),
       routerConfig: ref.watch(adminRouterProvider),
     );
   }

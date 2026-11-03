@@ -62,14 +62,10 @@ class _WorkTimeWebScreenState extends ConsumerState<WorkTimeWebScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(workTimeControllerProvider);
-    final compact = Breakpoints.of(context) == WindowSize.compact;
     return DefaultTabController(
       length: 2,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        if (!compact) ...[
-          Text('Pointages', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-        ],
+        // Le titre est dans la barre du haut de la coquille.
         _Filters(state: state, controller: _controller),
         const TabBar(tabs: [Tab(text: 'Pointages'), Tab(text: 'Temps de travail')]),
         const SizedBox(height: 8),

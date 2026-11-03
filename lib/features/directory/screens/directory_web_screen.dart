@@ -71,13 +71,8 @@ class DirectoryWebScreen extends ConsumerWidget {
     final controller = ref.read(directoryAdminControllerProvider.notifier);
 
     final header = Row(children: [
-      if (window != WindowSize.compact)
-        Expanded(
-          child: Text('Annuaires',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-        )
-      else
-        const Spacer(),
+      // Le titre est dans la barre du haut de la coquille.
+      const Spacer(),
       FilledButton.tonal(onPressed: () => _createCompany(context, ref), child: const Text('+ Entreprise')),
     ]);
 

@@ -55,11 +55,7 @@ class _EmployeeWebScreenState extends ConsumerState<EmployeeWebScreen> {
     final window = Breakpoints.of(context);
 
     final list = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      if (window != WindowSize.compact) ...[
-        // En compact, le titre est déjà dans l'AppBar de la coquille.
-        Text('Employés', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
-      ],
+      // Le titre est dans la barre du haut de la coquille.
       EmployeeToolbar(
         filters: state.filters,
         compact: window == WindowSize.compact,

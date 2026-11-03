@@ -41,6 +41,13 @@ void main() {
     expect(find.byType(LoginScreen), findsOneWidget);
   });
 
+  testWidgets('a direct link (or a reload) keeps its page while the session loads', (tester) async {
+    tester.binding.platformDispatcher.defaultRouteNameTestValue = '/employes';
+    addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+    await pumpAdmin(tester);
+    expect(find.byType(EmployeeWebScreen), findsOneWidget);
+  });
+
   testWidgets('the sidebar groups the menus and opens each screen', (tester) async {
     await pumpAdmin(tester);
     for (final group in ['VUE D\'ENSEMBLE', 'GESTION']) {
