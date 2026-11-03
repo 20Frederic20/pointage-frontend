@@ -95,18 +95,24 @@ class AdminApp extends ConsumerWidget {
     // Une seule application routeur, pour ne pas réécrire l'adresse du navigateur pendant l'attente.
     final session = ref.watch(sessionProvider);
     final loading = session.isLoading && !session.hasValue;
-    return ShadApp.router(
-      builder: (context, child) =>
-          loading ? const Scaffold(body: Center(child: CircularProgressIndicator())) : child!,
-      title: 'Pointage — Administration',
-      debugShowCheckedModeBanner: false,
+    final router = ref.watch(adminRouterProvider);
+    // ShadApp.custom + MaterialApp.router : les écrans Material partagés avec l'application mobile
+    // ont besoin du ScaffoldMessenger et des localisations de MaterialApp (ShadApp.router n'en a pas).
+    return ShadApp.custom(
       themeMode: ThemeMode.light,
       theme: adminTheme,
-      // Tableaux plus serrés, comme ceux de Kite : les colonnes tiennent à 1440 px sans défiler.
-      materialThemeBuilder: (_, theme) => theme.copyWith(
-        dataTableTheme: theme.dataTableTheme.copyWith(columnSpacing: 24, horizontalMargin: 16),
+      appBuilder: (context) => MaterialApp.router(
+        title: 'Pointage — Administration',
+        debugShowCheckedModeBanner: false,
+        // Le thème Material tiré de l'ardoise ; tableaux plus serrés, comme ceux de Kite.
+        theme: Theme.of(context).copyWith(
+          dataTableTheme: Theme.of(context).dataTableTheme.copyWith(columnSpacing: 24, horizontalMargin: 16),
+        ),
+        routerConfig: router,
+        builder: (context, child) => ShadAppBuilder(
+          child: loading ? const Scaffold(body: Center(child: CircularProgressIndicator())) : child!,
+        ),
       ),
-      routerConfig: ref.watch(adminRouterProvider),
     );
   }
 }

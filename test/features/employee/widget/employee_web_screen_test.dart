@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pointage/admin/admin_app.dart';
 import 'package:pointage/core/api_client.dart';
-import 'package:pointage/core/layout/admin_shell.dart';
-import 'package:pointage/core/layout/nav_item.dart';
 import 'package:pointage/features/directory/directory_repository.dart';
 import 'package:pointage/features/employee/employee_repository.dart';
 import 'package:pointage/features/employee/screens/employee_web_screen.dart';
@@ -12,7 +12,6 @@ import 'package:pointage/features/employee/widgets/employee_detail_view.dart';
 import 'package:pointage/features/user/user_repository.dart';
 
 import '../../../helpers/fakes.dart';
-import '../../../helpers/pump.dart';
 
 void main() {
   late FakeEmployeeRepository repo;
@@ -25,14 +24,17 @@ void main() {
         directoryRepositoryProvider.overrideWithValue(FakeDirectoryRepository()),
       ];
 
-  // L'écran est testé dans la vraie coquille : la place disponible est celle de l'application.
-  Future<void> pumpScreen(WidgetTester tester, double width, {double height = 900}) => pumpAtWidth(
-        tester,
-        width,
-        AdminShell(menus: [NavItem(label: 'Employés', icon: Icons.badge_outlined, builder: (_) => const EmployeeWebScreen())]),
-        height: height,
-        overrides: overrides(),
-      );
+  // L'écran est testé dans le vrai back-office : la place disponible est celle de l'application.
+  Future<void> pumpScreen(WidgetTester tester, double width, {double height = 900}) async {
+    tester.view.physicalSize = Size(width, height);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    tester.binding.platformDispatcher.defaultRouteNameTestValue = '/employes';
+    addTearDown(tester.binding.platformDispatcher.clearDefaultRouteNameTestValue);
+    await tester.pumpWidget(ProviderScope(overrides: overrides(), retry: (_, _) => null, child: const AdminApp()));
+    await tester.pumpAndSettle();
+    expect(find.byType(EmployeeWebScreen), findsOneWidget);
+  }
 
   testWidgets('360 px: cards, full-width toolbar, no overflow', (tester) async {
     await pumpScreen(tester, 360, height: 740);
@@ -42,8 +44,15 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('800 px: table without the creation date', (tester) async {
+  testWidgets('800 px: the sidebar leaves room for cards only', (tester) async {
     await pumpScreen(tester, 800, height: 1000);
+    expect(find.byType(EmployeeCard), findsWidgets);
+    expect(find.byType(DataTable), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('1024 px: table without the creation date', (tester) async {
+    await pumpScreen(tester, 1024, height: 1000);
     expect(find.byType(DataTable), findsOneWidget);
     expect(find.text('Créé le'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -110,7 +119,7 @@ void main() {
 
   testWidgets('a failed first load offers a retry', (tester) async {
     repo.listError = ApiException('Erreur serveur (500)', status: 500);
-    await pumpScreen(tester, 800, height: 1000);
+    await pumpScreen(tester, 1024, height: 1000);
     expect(find.text('Erreur serveur (500)'), findsOneWidget);
     repo.listError = null;
     await tester.tap(find.text('Réessayer'));
