@@ -45,6 +45,14 @@ class FakeSession extends SessionNotifier {
   Future<void> logout() async => state = const AsyncData(null);
 }
 
+/// Aucune session : l'écran de connexion s'affiche.
+class SignedOutSession extends SessionNotifier {
+  @override
+  Future<Session?> build() async => null;
+}
+
+Override signedOutSession() => sessionProvider.overrideWith(SignedOutSession.new);
+
 Override fakeSession({String? token = 'tok', String? role, String? userId, String? employeeId}) =>
     sessionProvider.overrideWith(() => FakeSession(token: token, role: role, userId: userId, employeeId: employeeId));
 
